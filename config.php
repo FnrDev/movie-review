@@ -1,14 +1,14 @@
 <?php
-$host = '20.74.143.233';
-$username = 'u202202672';
-$password = 'asdASD123!';
-$database = 'movie-review';
+function get_db_connection() {
+    //change the paramters in the function below to your user id
+    $dbc = mysqli_connect('localhost', 'u202202672', 'asdASD123!', 'db202202672');
 
-$conn = new mysqli($host, $username, $password, $database);
+    if (mysqli_connect_errno()) {
+        printf("Connect failed: %s\n", mysqli_connect_error());
+        die('b0ther');
+    }
 
-if ($conn->connect_error) {
-    die('Connection failed: ' . $conn->connect_error);
+    mysqli_set_charset($dbc, 'utf8mb4');
+    return $dbc;
 }
-
-$conn->set_charset('utf8mb4');
 ?>

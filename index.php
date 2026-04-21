@@ -1,4 +1,7 @@
-<?php require_once 'config.php'; ?>
+<?php
+require_once 'config.php';
+$dbc = get_db_connection();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,9 +31,9 @@
 
         <section class="status">
             <h3>Database Status</h3>
-            <?php if ($conn->ping()): ?>
-                <p class="success">Connected to database: <strong><?= htmlspecialchars($database) ?></strong></p>
-                <p>Server info: <?= htmlspecialchars($conn->server_info) ?></p>
+            <?php if (mysqli_ping($dbc)): ?>
+                <p class="success">Connected to database: <strong>db202202672</strong></p>
+                <p>Server info: <?= htmlspecialchars(mysqli_get_server_info($dbc)) ?></p>
             <?php else: ?>
                 <p class="error">Database connection failed.</p>
             <?php endif; ?>
@@ -44,4 +47,4 @@
     </footer>
 </body>
 </html>
-<?php $conn->close(); ?>
+<?php mysqli_close($dbc); ?>

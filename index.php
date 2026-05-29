@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'config.php';
 $dbc = get_db_connection();
 
@@ -35,12 +36,23 @@ $result = mysqli_query($dbc, $sql);
 <body>
     <header>
         <nav class="container">
-            <h1 class="logo">Movie Review</h1>
+            <h1 class="logo"><a href="index.php" style="color:inherit;text-decoration:none;">Movie Review</a></h1>
             <ul class="nav-links">
                 <li><a href="index.php">Home</a></li>
-                <li><a href="#">Movies</a></li>
-                <li><a href="#">Reviews</a></li>
-                <li><a href="#">About</a></li>
+                <li><a href="search.php">Search</a></li>
+                <?php if (isset($_SESSION['user'])): ?>
+                    <li><a href="#">Hello, <?= htmlspecialchars($_SESSION['user']['username']) ?></a></li>
+                    <?php if ($_SESSION['user']['role'] === 'creator'): ?>
+                        <li><a href="creator/index.php">My Movies</a></li>
+                    <?php endif; ?>
+                    <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                        <li><a href="admin/index.php">Admin</a></li>
+                    <?php endif; ?>
+                    <li><a href="logout.php">Logout</a></li>
+                <?php else: ?>
+                    <li><a href="login.php">Login</a></li>
+                    <li><a href="signup.php">Sign Up</a></li>
+                <?php endif; ?>
             </ul>
         </nav>
     </header>
@@ -89,6 +101,7 @@ $result = mysqli_query($dbc, $sql);
                                     </span>
                                     <span class="views"><?= (int)$movie['view_count'] ?> views</span>
                                 </div>
+                                <a href="movie.php?id=<?= (int)$movie['movie_id'] ?>" class="view-more">View More</a>
                             </div>
                         </article>
                     <?php endwhile; ?>

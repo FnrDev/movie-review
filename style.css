@@ -221,3 +221,13 @@ footer {
     text-align: center;
     color: #b3b3b3;
 }
+
+.view-more {
+    display: inline-block;
+    margin-top: 0.75rem;
+    color: #e50914;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.view-more:hover { text-decoration: underline; }

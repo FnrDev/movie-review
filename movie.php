@@ -162,7 +162,7 @@ if (!empty($movie['trailer_url'])) {
     <title><?= htmlspecialchars($movie['title']) ?> &middot; Movie Review</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* ===== Cinematic backdrop ===== */
+        /* Cinematic backdrop */
         .movie-backdrop {
             position: relative;
             min-height: 520px;
@@ -304,43 +304,83 @@ if (!empty($movie['trailer_url'])) {
         .stat-row .label { color: #888; }
         .stat-row .value { color: #f5f5f5; font-weight: 600; }
 
-        /* ===== Comments ===== */
+        /* Comments */
         .comments-section { margin-top: 1rem; }
+        .comment-box-wrap {
+            background: linear-gradient(180deg, #1d1d1d, #161616);
+            border: 1px solid #2c2c2c;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin: 1.25rem 0 2rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .comment-box-wrap:focus-within {
+            border-color: #e50914;
+            box-shadow: 0 0 0 3px rgba(229,9,20,0.12);
+        }
+        .comment-box-head {
+            display: flex; align-items: center; gap: 0.65rem;
+            margin-bottom: 0.85rem;
+        }
+        .comment-box-head .me-avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.95rem; color: #fff; text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .comment-box-head .me-label { font-size: 0.88rem; color: #b3b3b3; }
+        .comment-box-head .me-label strong { color: #f5f5f5; }
         .comment-form textarea {
             width: 100%; background: #0f0f0f; color: #f5f5f5;
             border: 1px solid #333; border-radius: 12px;
             padding: 0.85rem 1rem; font: inherit; font-size: 0.92rem;
-            resize: vertical; min-height: 100px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .comment-form textarea:focus { outline: none; border-color: #e50914; box-shadow: 0 0 0 3px rgba(229,9,20,0.12); }
-        .comment-form textarea.invalid { border-color: #e50914; }
-        .comment-card {
-            background: #1a1a1a; border: 1px solid #2a2a2a;
-            border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 0.85rem;
+            resize: vertical; min-height: 95px;
             transition: border-color 0.2s;
         }
-        .comment-card:hover { border-color: #3a3a3a; }
-        .comment-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
-        .comment-avatar {
-            display: inline-flex; align-items: center; gap: 0.6rem;
+        .comment-form textarea:focus { outline: none; border-color: #444; }
+        .comment-form textarea.invalid { border-color: #e50914; }
+        .comment-form-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 0.75rem;
         }
-        .avatar-circle {
-            width: 34px; height: 34px; border-radius: 50%;
-            background: linear-gradient(135deg, #e50914, #7a0008);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 0.9rem; color: #fff; text-transform: uppercase;
-        }
-        .comment-author { font-weight: 600; font-size: 0.92rem; color: #f5f5f5; }
-        .comment-date { font-size: 0.75rem; color: #666; }
-        .comment-text { color: #ccc; font-size: 0.9rem; line-height: 1.6; }
-        .no-comments { color: #888; font-size: 0.92rem; padding: 1.5rem; text-align: center; background: #1a1a1a; border-radius: 12px; border: 1px dashed #333; }
-        .login-prompt {
+        .char-counter { font-size: 0.76rem; color: #666; }
+        .char-counter.warn { color: #fbbf24; }
+        .char-counter.over { color: #fca5a5; }
+        .comment-card {
             background: #1a1a1a; border: 1px solid #2a2a2a;
-            border-radius: 12px; padding: 1.1rem 1.4rem;
-            color: #b3b3b3; font-size: 0.92rem; margin-bottom: 1.5rem;
+            border-radius: 14px; padding: 1.15rem 1.3rem; margin-bottom: 0.85rem;
+            transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
         }
-        .login-prompt a { color: #e50914; text-decoration: none; font-weight: 600; }
+        .comment-card:hover {
+            transform: translateY(-2px);
+            border-color: #3a3a3a;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; }
+        .comment-avatar { display: inline-flex; align-items: center; gap: 0.65rem; }
+        .avatar-circle {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.95rem; color: #fff; text-transform: uppercase;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+        .comment-author { font-weight: 700; font-size: 0.92rem; color: #f5f5f5; }
+        .comment-date { font-size: 0.75rem; color: #666; }
+        .comment-text { color: #d0d0d0; font-size: 0.92rem; line-height: 1.65; padding-left: 0.15rem; }
+        .no-comments {
+            color: #888; font-size: 0.95rem; padding: 2.5rem 1.5rem; text-align: center;
+            background: #161616; border-radius: 14px; border: 1px dashed #333;
+        }
+        .no-comments .big-icon { font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: 0.5; }
+        .login-prompt {
+            background: linear-gradient(135deg, rgba(229,9,20,0.08), #1a1a1a);
+            border: 1px solid #2a2a2a;
+            border-radius: 14px; padding: 1.25rem 1.5rem;
+            color: #b3b3b3; font-size: 0.95rem; margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .login-prompt a { color: #e50914; text-decoration: none; font-weight: 700; }
         .login-prompt a:hover { text-decoration: underline; }
         .back-link {
             display: inline-block; color: #b3b3b3; text-decoration: none;
@@ -478,34 +518,48 @@ if (!empty($movie['trailer_url'])) {
                         <h2 class="section-title">Comments (<?= count($comments) ?>)</h2>
                         <?php [$cType, $cText] = $commentMsg ? explode(':', $commentMsg, 2) : ['', '']; ?>
 
-                        <?php if (isset($_SESSION['user'])): ?>
-                            <div class="comment-form" style="margin:1rem 0 1.5rem;">
-                                <form method="post" id="commentForm" novalidate>
+                        <?php if (isset($_SESSION['user'])):
+                            $meName = $_SESSION['user']['username'];
+                            $meColor = 'hsl(' . (crc32($meName) % 360) . ', 60%, 45%)';
+                        ?>
+                            <div class="comment-box-wrap">
+                                <div class="comment-box-head">
+                                    <span class="me-avatar" style="background:<?= $meColor ?>;"><?= htmlspecialchars(substr($meName,0,1)) ?></span>
+                                    <span class="me-label">Commenting as <strong><?= htmlspecialchars($meName) ?></strong></span>
+                                </div>
+                                <form method="post" id="commentForm" class="comment-form" novalidate>
                                     <textarea name="comment_text" id="commentText"
                                               placeholder="Share your thoughts about this movie..." maxlength="1000"></textarea>
-                                    <div style="font-size:0.76rem;color:#666;margin-top:0.3rem;">Max 1000 characters</div>
+                                    <div class="comment-form-footer">
+                                        <span class="char-counter" id="charCounter">0 / 1000</span>
+                                        <button type="submit" name="submit_comment" class="btn-comment">Post Comment</button>
+                                    </div>
                                     <?php if ($cText): ?>
                                         <p class="comment-msg <?= $cType ?>"><?= htmlspecialchars($cText) ?></p>
                                     <?php else: ?>
                                         <p class="comment-msg" id="commentMsg"></p>
                                     <?php endif; ?>
-                                    <button type="submit" name="submit_comment" class="btn-comment">Post Comment</button>
                                 </form>
                             </div>
                         <?php else: ?>
-                            <div class="login-prompt" style="margin-top:1rem;">
-                                <a href="login.php">Log in</a> or <a href="signup.php">sign up</a> to leave a comment.
+                            <div class="login-prompt">
+                                <a href="login.php">Log in</a> or <a href="signup.php">sign up</a> to join the conversation.
                             </div>
                         <?php endif; ?>
 
                         <?php if (empty($comments)): ?>
-                            <p class="no-comments">No comments yet. Be the first to share your thoughts!</p>
+                            <div class="no-comments">
+                                <span class="big-icon">&#128172;</span>
+                                No comments yet. Be the first to share your thoughts!
+                            </div>
                         <?php else: ?>
-                            <?php foreach ($comments as $comment): ?>
+                            <?php foreach ($comments as $comment):
+                                $cColor = 'hsl(' . (crc32($comment['username']) % 360) . ', 60%, 45%)';
+                            ?>
                                 <div class="comment-card">
                                     <div class="comment-header">
                                         <span class="comment-avatar">
-                                            <span class="avatar-circle"><?= htmlspecialchars(substr($comment['username'],0,1)) ?></span>
+                                            <span class="avatar-circle" style="background:<?= $cColor ?>;"><?= htmlspecialchars(substr($comment['username'],0,1)) ?></span>
                                             <span class="comment-author"><?= htmlspecialchars($comment['username']) ?></span>
                                         </span>
                                         <span class="comment-date"><?= htmlspecialchars(substr($comment['created_at'],0,16)) ?></span>
@@ -585,9 +639,19 @@ if (!empty($movie['trailer_url'])) {
 
         const commentForm = document.getElementById('commentForm');
         if (commentForm) {
+            const text    = document.getElementById('commentText');
+            const counter = document.getElementById('charCounter');
+
+            // Live character counter
+            text.addEventListener('input', function() {
+                const len = text.value.length;
+                counter.textContent = len + ' / 1000';
+                counter.classList.toggle('warn', len > 800 && len <= 1000);
+                counter.classList.toggle('over', len > 1000);
+            });
+
             commentForm.addEventListener('submit', function(e) {
-                const text = document.getElementById('commentText');
-                const msg  = document.getElementById('commentMsg');
+                const msg = document.getElementById('commentMsg');
                 if (msg) msg.textContent = '';
                 text.classList.remove('invalid');
                 if (!text.value.trim()) {

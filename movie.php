@@ -48,7 +48,7 @@ while ($m = mysqli_fetch_assoc($mediaRes)) {
 }
 mysqli_stmt_close($mediaStmt);
 
-// Get current user's rating if logged in
+// Get current user's rating
 $userRating = 0;
 if (isset($_SESSION['user'])) {
     $userId    = (int) $_SESSION['user']['user_id'];
@@ -72,11 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_rating'])) {
     } else {
         $userId      = (int) $_SESSION['user']['user_id'];
         $ratingValue = (int) ($_POST['rating_value'] ?? 0);
-
         if ($ratingValue < 1 || $ratingValue > 5) {
             $ratingMsg = 'error:Please select a rating between 1 and 5.';
         } else {
-            // Insert or update rating
             $stmt = mysqli_prepare($dbc, "
                 INSERT INTO dbProj_ratings (movie_id, user_id, rating_value)
                 VALUES (?, ?, ?)
@@ -87,15 +85,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_rating'])) {
             mysqli_stmt_close($stmt);
             $userRating = $ratingValue;
             $ratingMsg  = 'ok:Rating saved!';
-
-            // Refresh avg rating
             $res2 = mysqli_query($dbc, "
                 SELECT COALESCE(ROUND(AVG(rating_value),1),0) AS avg_rating,
                        COUNT(*) AS total_ratings
                 FROM dbProj_ratings WHERE movie_id = $movieId
             ");
-            $ratingStats          = mysqli_fetch_assoc($res2);
-            $movie['avg_rating']  = $ratingStats['avg_rating'];
+            $ratingStats            = mysqli_fetch_assoc($res2);
+            $movie['avg_rating']    = $ratingStats['avg_rating'];
             $movie['total_ratings'] = $ratingStats['total_ratings'];
         }
     }
@@ -109,7 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_comment'])) {
     } else {
         $userId  = (int) $_SESSION['user']['user_id'];
         $comment = trim($_POST['comment_text'] ?? '');
-
         if (empty($comment)) {
             $commentMsg = 'error:Comment cannot be empty.';
         } elseif (strlen($comment) > 1000) {
@@ -145,6 +140,19 @@ while ($c = mysqli_fetch_assoc($commentsRes)) {
     $comments[] = $c;
 }
 mysqli_stmt_close($commentsStmt);
+
+// Prepare trailer embed
+$embedUrl = '';
+if (!empty($movie['trailer_url'])) {
+    $t = $movie['trailer_url'];
+    if (preg_match('/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $t, $mm)) {
+        $embedUrl = 'https://www.youtube.com/embed/' . $mm[1];
+    } elseif (preg_match('/youtu\.be\/([a-zA-Z0-9_-]+)/', $t, $mm)) {
+        $embedUrl = 'https://www.youtube.com/embed/' . $mm[1];
+    } else {
+        $embedUrl = $t;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -154,213 +162,191 @@ mysqli_stmt_close($commentsStmt);
     <title><?= htmlspecialchars($movie['title']) ?> &middot; Movie Review</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .movie-detail {
+        /* ===== Cinematic backdrop ===== */
+        .movie-backdrop {
+            position: relative;
+            min-height: 520px;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .backdrop-img {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center 30%;
+            filter: blur(2px) brightness(0.4);
+            transform: scale(1.1);
+        }
+        .backdrop-fallback {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(229,9,20,0.25), transparent 50%),
+                linear-gradient(135deg, #2a1a1a, #141414);
+        }
+        .backdrop-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(20,20,20,0.4) 0%, rgba(20,20,20,0.85) 70%, #141414 100%);
+        }
+        .backdrop-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            padding: 2.5rem 0;
+        }
+        .backdrop-layout {
             display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 2rem;
-            margin: 2rem 0;
+            grid-template-columns: 240px 1fr;
+            gap: 2.5rem;
+            align-items: end;
         }
         @media (max-width: 700px) {
-            .movie-detail { grid-template-columns: 1fr; }
+            .backdrop-layout { grid-template-columns: 1fr; }
+            .detail-poster { max-width: 200px; }
         }
         .detail-poster {
-            position: relative;
-        }
-        .detail-poster img {
-            width: 100%;
-            border-radius: 10px;
-            display: block;
-        }
-        .no-poster-lg {
-            width: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.08);
             aspect-ratio: 2/3;
-            background: #2a2a2a;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            font-size: 0.9rem;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
         }
-        .detail-info h1 {
-            font-size: 2rem;
-            margin-bottom: 0.4rem;
-            line-height: 1.2;
+        .detail-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .detail-poster .no-poster-lg {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            color: #666; font-size: 0.9rem;
+        }
+        .detail-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.05;
+            margin-bottom: 0.85rem;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.5);
         }
         .detail-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6rem;
-            margin-bottom: 1.25rem;
-            align-items: center;
-        }
-        .meta-tag {
-            background: #2a2a2a;
-            color: #b3b3b3;
-            padding: 0.2rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.78rem;
-        }
-        .meta-tag.red {
-            background: rgba(229,9,20,0.15);
-            color: #f87171;
-        }
-        .avg-rating {
-            font-size: 1.1rem;
-            color: #ffb400;
-            font-weight: 700;
-        }
-        .avg-rating small { color: #888; font-weight: 400; font-size: 0.85rem; }
-        .detail-desc {
-            color: #ddd;
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
-        }
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
+            display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;
             margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #333;
         }
-        /* Star Rating */
-        .star-rating-widget {
-            background: #1f1f1f;
-            border: 1px solid #2a2a2a;
-            border-radius: 10px;
-            padding: 1.25rem;
-            margin-bottom: 2rem;
+        .meta-pill {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e5e5e5;
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
         }
-        .star-rating-widget h3 { font-size: 1rem; margin-bottom: 0.75rem; }
-        .stars {
-            display: flex;
-            gap: 0.3rem;
-            margin-bottom: 0.75rem;
+        .meta-pill.genre { background: rgba(229,9,20,0.25); border-color: rgba(229,9,20,0.4); color: #ff6b6b; font-weight: 600; }
+        .rating-badge {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            font-size: 1.3rem; font-weight: 800; color: #ffb400;
         }
-        .star {
-            font-size: 2rem;
-            cursor: pointer;
-            color: #444;
-            transition: color 0.15s, transform 0.1s;
-            user-select: none;
+        .rating-badge small { color: #b3b3b3; font-weight: 400; font-size: 0.85rem; }
+
+        /* ===== Body content ===== */
+        .detail-body { padding: 2.5rem 0; }
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2.5rem;
         }
-        .star:hover,
-        .star.hovered,
-        .star.selected { color: #ffb400; }
-        .star:hover { transform: scale(1.15); }
-        .btn-rate {
-            background: #e50914;
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            padding: 0.5rem 1.2rem;
-            font: inherit;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
+        @media (max-width: 850px) { .content-grid { grid-template-columns: 1fr; } }
+        .section-title {
+            font-size: 1.15rem; font-weight: 700;
+            margin-bottom: 1rem; padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e50914;
+            display: inline-block;
         }
-        .btn-rate:hover { background: #c40811; }
-        .rating-msg {
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-            min-height: 1.2em;
+        .synopsis { color: #ddd; line-height: 1.8; font-size: 1.02rem; margin-bottom: 2.5rem; }
+        .trailer-section { margin-bottom: 2.5rem; }
+        .trailer-section iframe {
+            width: 100%; aspect-ratio: 16/9; border: none;
+            border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-        .rating-msg.ok  { color: #86efac; }
-        .rating-msg.err { color: #fca5a5; }
-        /* Comments */
-        .comments-section { margin-top: 2rem; }
-        .comment-form {
-            background: #1f1f1f;
-            border: 1px solid #2a2a2a;
-            border-radius: 10px;
-            padding: 1.25rem;
+        .media-player { width: 100%; border-radius: 12px; margin-bottom: 1rem; background: #000; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+
+        /* ===== Rating widget ===== */
+        .side-card {
+            background: linear-gradient(180deg, #1e1e1e, #181818);
+            border: 1px solid #2c2c2c;
+            border-radius: 16px;
+            padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
         }
+        .side-card h3 { font-size: 1.05rem; margin-bottom: 1rem; }
+        .stars { display: flex; gap: 0.35rem; margin-bottom: 1rem; }
+        .star {
+            font-size: 2.2rem; cursor: pointer; color: #3a3a3a;
+            transition: color 0.15s, transform 0.12s; user-select: none;
+            line-height: 1;
+        }
+        .star:hover, .star.hovered, .star.selected { color: #ffb400; }
+        .star:hover { transform: scale(1.2) rotate(-5deg); }
+        .btn-rate, .btn-comment {
+            background: #e50914; color: #fff; border: none;
+            border-radius: 10px; padding: 0.65rem 1.4rem;
+            font: inherit; font-weight: 700; cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-rate:hover, .btn-comment:hover { background: #c40811; }
+        .btn-rate:active, .btn-comment:active { transform: scale(0.97); }
+        .rating-msg, .comment-msg { font-size: 0.85rem; margin-top: 0.65rem; min-height: 1.2em; }
+        .rating-msg.ok, .comment-msg.ok { color: #86efac; }
+        .rating-msg.err, .comment-msg.err { color: #fca5a5; }
+        .stat-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #2a2a2a; font-size: 0.9rem; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-row .label { color: #888; }
+        .stat-row .value { color: #f5f5f5; font-weight: 600; }
+
+        /* ===== Comments ===== */
+        .comments-section { margin-top: 1rem; }
         .comment-form textarea {
-            width: 100%;
-            background: #141414;
-            color: #f5f5f5;
-            border: 1px solid #333;
-            border-radius: 7px;
-            padding: 0.65rem 0.85rem;
-            font: inherit;
-            font-size: 0.9rem;
-            resize: vertical;
-            min-height: 90px;
+            width: 100%; background: #0f0f0f; color: #f5f5f5;
+            border: 1px solid #333; border-radius: 12px;
+            padding: 0.85rem 1rem; font: inherit; font-size: 0.92rem;
+            resize: vertical; min-height: 100px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .comment-form textarea:focus { outline: none; border-color: #e50914; box-shadow: 0 0 0 3px rgba(229,9,20,0.12); }
+        .comment-form textarea.invalid { border-color: #e50914; }
+        .comment-card {
+            background: #1a1a1a; border: 1px solid #2a2a2a;
+            border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 0.85rem;
             transition: border-color 0.2s;
         }
-        .comment-form textarea:focus { outline: none; border-color: #e50914; }
-        .comment-form textarea.invalid { border-color: #e50914; }
-        .btn-comment {
-            margin-top: 0.65rem;
-            background: #e50914;
-            color: #fff;
-            border: none;
-            border-radius: 7px;
-            padding: 0.5rem 1.1rem;
-            font: inherit;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
+        .comment-card:hover { border-color: #3a3a3a; }
+        .comment-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
+        .comment-avatar {
+            display: inline-flex; align-items: center; gap: 0.6rem;
         }
-        .btn-comment:hover { background: #c40811; }
-        .comment-msg {
-            font-size: 0.85rem;
-            margin-top: 0.4rem;
-            min-height: 1.2em;
+        .avatar-circle {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, #e50914, #7a0008);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.9rem; color: #fff; text-transform: uppercase;
         }
-        .comment-msg.ok  { color: #86efac; }
-        .comment-msg.err { color: #fca5a5; }
-        .comment-card {
-            background: #1f1f1f;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            padding: 1rem 1.1rem;
-            margin-bottom: 0.75rem;
-        }
-        .comment-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 0.4rem;
-        }
-        .comment-author { font-weight: 600; font-size: 0.9rem; color: #e50914; }
-        .comment-date   { font-size: 0.75rem; color: #666; }
-        .comment-text   { color: #ddd; font-size: 0.88rem; line-height: 1.6; }
-        .no-comments    { color: #888; font-size: 0.9rem; padding: 1rem 0; }
+        .comment-author { font-weight: 600; font-size: 0.92rem; color: #f5f5f5; }
+        .comment-date { font-size: 0.75rem; color: #666; }
+        .comment-text { color: #ccc; font-size: 0.9rem; line-height: 1.6; }
+        .no-comments { color: #888; font-size: 0.92rem; padding: 1.5rem; text-align: center; background: #1a1a1a; border-radius: 12px; border: 1px dashed #333; }
         .login-prompt {
-            background: #1f1f1f;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            padding: 1rem 1.25rem;
-            color: #b3b3b3;
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
+            background: #1a1a1a; border: 1px solid #2a2a2a;
+            border-radius: 12px; padding: 1.1rem 1.4rem;
+            color: #b3b3b3; font-size: 0.92rem; margin-bottom: 1.5rem;
         }
-        .login-prompt a { color: #e50914; text-decoration: none; }
+        .login-prompt a { color: #e50914; text-decoration: none; font-weight: 600; }
         .login-prompt a:hover { text-decoration: underline; }
-        .trailer-section { margin-bottom: 1.5rem; }
-        .trailer-section iframe {
-            width: 100%;
-            aspect-ratio: 16/9;
-            border: none;
-            border-radius: 8px;
-        }
-        .media-player {
-            width: 100%;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            background: #000;
-        }
         .back-link {
-            display: inline-block;
-            color: #b3b3b3;
-            text-decoration: none;
-            font-size: 0.88rem;
-            margin-bottom: 1rem;
-            transition: color 0.2s;
+            display: inline-block; color: #b3b3b3; text-decoration: none;
+            font-size: 0.88rem; margin: 1.25rem 0; transition: color 0.2s;
         }
-        .back-link:hover { color: #f5f5f5; }
+        .back-link:hover { color: #fff; }
     </style>
 </head>
 <body>
@@ -386,154 +372,160 @@ mysqli_stmt_close($commentsStmt);
         </nav>
     </header>
 
-    <main class="container">
-        <a href="index.php" class="back-link">← Back to movies</a>
+    <!-- Cinematic backdrop hero -->
+    <section class="movie-backdrop">
+        <?php if (!empty($movie['poster_image'])): ?>
+            <div class="backdrop-img" style="background-image:url('<?= htmlspecialchars($movie['poster_image']) ?>');"></div>
+        <?php else: ?>
+            <div class="backdrop-fallback"></div>
+        <?php endif; ?>
+        <div class="backdrop-overlay"></div>
 
-        <div class="movie-detail">
-            <!-- Poster -->
-            <div class="detail-poster">
-                <?php if (!empty($movie['poster_image'])): ?>
-                    <img src="<?= htmlspecialchars($movie['poster_image']) ?>"
-                         alt="<?= htmlspecialchars($movie['title']) ?> poster"
-                         onerror="this.parentNode.innerHTML='<div class=\'no-poster-lg\'>No Image</div>'">
-                <?php else: ?>
-                    <div class="no-poster-lg">No Image</div>
-                <?php endif; ?>
-            </div>
-
-            <!-- Info -->
-            <div class="detail-info">
-                <h1><?= htmlspecialchars($movie['title']) ?></h1>
-
-                <div class="detail-meta">
-                    <span class="meta-tag red"><?= htmlspecialchars($movie['genre_name']) ?></span>
-                    <?php if ($movie['release_year']): ?>
-                        <span class="meta-tag"><?= (int)$movie['release_year'] ?></span>
-                    <?php endif; ?>
-                    <span class="meta-tag">by <?= htmlspecialchars($movie['creator_name']) ?></span>
-                    <span class="meta-tag"><?= (int)$movie['view_count'] ?> views</span>
-                </div>
-
-                <div class="avg-rating">
-                    ★ <?= number_format((float)$movie['avg_rating'], 1) ?>
-                    <small>(<?= (int)$movie['total_ratings'] ?> ratings)</small>
-                </div>
-
-                <br>
-                <p class="detail-desc"><?= nl2br(htmlspecialchars($movie['full_description'])) ?></p>
-
-                <!-- Trailer -->
-                <?php if (!empty($movie['trailer_url'])): ?>
-                    <div class="trailer-section">
-                        <p class="section-title">Trailer</p>
-                        <?php
-                        $trailerUrl = $movie['trailer_url'];
-                        // Convert YouTube watch URL to embed URL
-                        if (preg_match('/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $trailerUrl, $m)) {
-                            $trailerUrl = 'https://www.youtube.com/embed/' . $m[1];
-                        } elseif (preg_match('/youtu\.be\/([a-zA-Z0-9_-]+)/', $trailerUrl, $m)) {
-                            $trailerUrl = 'https://www.youtube.com/embed/' . $m[1];
-                        }
-                        ?>
-                        <iframe src="<?= htmlspecialchars($trailerUrl) ?>"
-                                allowfullscreen
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-                        </iframe>
-                    </div>
-                <?php endif; ?>
-
-                <!-- Media files -->
-                <?php foreach ($mediaFiles as $media): ?>
-                    <?php if ($media['media_type'] === 'video'): ?>
-                        <video class="media-player" controls>
-                            <source src="<?= htmlspecialchars($media['media_url']) ?>">
-                            Your browser does not support video.
-                        </video>
-                    <?php elseif ($media['media_type'] === 'audio'): ?>
-                        <audio class="media-player" controls>
-                            <source src="<?= htmlspecialchars($media['media_url']) ?>">
-                            Your browser does not support audio.
-                        </audio>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <!-- Rating Widget -->
-        <div class="star-rating-widget">
-            <h3>Rate this movie</h3>
-            <?php if (isset($_SESSION['user'])): ?>
-                <?php
-                [$rType, $rText] = $ratingMsg ? explode(':', $ratingMsg, 2) : ['', ''];
-                ?>
-                <form method="post" id="ratingForm">
-                    <div class="stars" id="starContainer">
-                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                            <span class="star <?= $i <= $userRating ? 'selected' : '' ?>"
-                                  data-value="<?= $i ?>">★</span>
-                        <?php endfor; ?>
-                    </div>
-                    <input type="hidden" name="rating_value" id="ratingValue" value="<?= $userRating ?>">
-                    <button type="submit" name="submit_rating" class="btn-rate">Submit Rating</button>
-                    <?php if ($rText): ?>
-                        <p class="rating-msg <?= $rType ?>"><?= htmlspecialchars($rText) ?></p>
-                    <?php else: ?>
-                        <p class="rating-msg" id="ratingMsg">
-                            <?= $userRating > 0 ? 'Your current rating: ' . $userRating . ' / 5' : 'Click a star to rate' ?>
-                        </p>
-                    <?php endif; ?>
-                </form>
-            <?php else: ?>
-                <p style="color:#b3b3b3;font-size:0.9rem;">
-                    <a href="login.php" style="color:#e50914;">Log in</a> to rate this movie.
-                </p>
-            <?php endif; ?>
-        </div>
-
-        <!-- Comments -->
-        <div class="comments-section">
-            <p class="section-title">Comments (<?= count($comments) ?>)</p>
-
-            <?php
-            [$cType, $cText] = $commentMsg ? explode(':', $commentMsg, 2) : ['', ''];
-            ?>
-
-            <?php if (isset($_SESSION['user'])): ?>
-                <div class="comment-form">
-                    <form method="post" id="commentForm" novalidate>
-                        <textarea name="comment_text" id="commentText"
-                                  placeholder="Share your thoughts about this movie..."
-                                  maxlength="1000"></textarea>
-                        <span style="font-size:0.76rem;color:#666;">Max 1000 characters</span>
-                        <?php if ($cText): ?>
-                            <p class="comment-msg <?= $cType ?>"><?= htmlspecialchars($cText) ?></p>
+        <div class="backdrop-content">
+            <div class="container">
+                <div class="backdrop-layout">
+                    <div class="detail-poster">
+                        <?php if (!empty($movie['poster_image'])): ?>
+                            <img src="<?= htmlspecialchars($movie['poster_image']) ?>"
+                                 alt="<?= htmlspecialchars($movie['title']) ?>"
+                                 onerror="this.parentNode.innerHTML='<div class=\'no-poster-lg\'>No Image</div>'">
                         <?php else: ?>
-                            <p class="comment-msg" id="commentMsg"></p>
+                            <div class="no-poster-lg">No Image</div>
                         <?php endif; ?>
-                        <button type="submit" name="submit_comment" class="btn-comment">Post Comment</button>
-                    </form>
-                </div>
-            <?php else: ?>
-                <div class="login-prompt">
-                    <a href="login.php">Log in</a> or <a href="signup.php">sign up</a> to leave a comment.
-                </div>
-            <?php endif; ?>
-
-            <?php if (empty($comments)): ?>
-                <p class="no-comments">No comments yet. Be the first!</p>
-            <?php else: ?>
-                <?php foreach ($comments as $comment): ?>
-                    <div class="comment-card">
-                        <div class="comment-header">
-                            <span class="comment-author"><?= htmlspecialchars($comment['username']) ?></span>
-                            <span class="comment-date"><?= htmlspecialchars(substr($comment['created_at'], 0, 16)) ?></span>
-                        </div>
-                        <p class="comment-text"><?= nl2br(htmlspecialchars($comment['comment_text'])) ?></p>
                     </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                    <div class="detail-headline">
+                        <h1 class="detail-title"><?= htmlspecialchars($movie['title']) ?></h1>
+                        <div class="detail-meta">
+                            <span class="meta-pill genre"><?= htmlspecialchars($movie['genre_name']) ?></span>
+                            <?php if ($movie['release_year']): ?>
+                                <span class="meta-pill"><?= (int)$movie['release_year'] ?></span>
+                            <?php endif; ?>
+                            <span class="meta-pill">by <?= htmlspecialchars($movie['creator_name']) ?></span>
+                            <span class="meta-pill"><?= (int)$movie['view_count'] ?> views</span>
+                        </div>
+                        <div class="rating-badge">
+                            &#9733; <?= number_format((float)$movie['avg_rating'], 1) ?>
+                            <small>(<?= (int)$movie['total_ratings'] ?> ratings)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </main>
+    </section>
+
+    <div class="detail-body">
+        <div class="container">
+            <a href="index.php" class="back-link">&larr; Back to movies</a>
+
+            <div class="content-grid">
+                <!-- Left: synopsis + trailer + comments -->
+                <div class="main-col">
+                    <h2 class="section-title">Synopsis</h2>
+                    <p class="synopsis"><?= nl2br(htmlspecialchars($movie['full_description'])) ?></p>
+
+                    <?php if ($embedUrl): ?>
+                        <div class="trailer-section">
+                            <h2 class="section-title">Trailer</h2>
+                            <iframe src="<?= htmlspecialchars($embedUrl) ?>" allowfullscreen
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php foreach ($mediaFiles as $media): ?>
+                        <?php if ($media['media_type'] === 'video'): ?>
+                            <video class="media-player" controls>
+                                <source src="<?= htmlspecialchars($media['media_url']) ?>">
+                            </video>
+                        <?php elseif ($media['media_type'] === 'audio'): ?>
+                            <audio class="media-player" controls>
+                                <source src="<?= htmlspecialchars($media['media_url']) ?>">
+                            </audio>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+
+                    <!-- Comments -->
+                    <div class="comments-section">
+                        <h2 class="section-title">Comments (<?= count($comments) ?>)</h2>
+                        <?php [$cType, $cText] = $commentMsg ? explode(':', $commentMsg, 2) : ['', '']; ?>
+
+                        <?php if (isset($_SESSION['user'])): ?>
+                            <div class="comment-form" style="margin:1rem 0 1.5rem;">
+                                <form method="post" id="commentForm" novalidate>
+                                    <textarea name="comment_text" id="commentText"
+                                              placeholder="Share your thoughts about this movie..." maxlength="1000"></textarea>
+                                    <div style="font-size:0.76rem;color:#666;margin-top:0.3rem;">Max 1000 characters</div>
+                                    <?php if ($cText): ?>
+                                        <p class="comment-msg <?= $cType ?>"><?= htmlspecialchars($cText) ?></p>
+                                    <?php else: ?>
+                                        <p class="comment-msg" id="commentMsg"></p>
+                                    <?php endif; ?>
+                                    <button type="submit" name="submit_comment" class="btn-comment">Post Comment</button>
+                                </form>
+                            </div>
+                        <?php else: ?>
+                            <div class="login-prompt" style="margin-top:1rem;">
+                                <a href="login.php">Log in</a> or <a href="signup.php">sign up</a> to leave a comment.
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (empty($comments)): ?>
+                            <p class="no-comments">No comments yet. Be the first to share your thoughts!</p>
+                        <?php else: ?>
+                            <?php foreach ($comments as $comment): ?>
+                                <div class="comment-card">
+                                    <div class="comment-header">
+                                        <span class="comment-avatar">
+                                            <span class="avatar-circle"><?= htmlspecialchars(substr($comment['username'],0,1)) ?></span>
+                                            <span class="comment-author"><?= htmlspecialchars($comment['username']) ?></span>
+                                        </span>
+                                        <span class="comment-date"><?= htmlspecialchars(substr($comment['created_at'],0,16)) ?></span>
+                                    </div>
+                                    <p class="comment-text"><?= nl2br(htmlspecialchars($comment['comment_text'])) ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Right: rating + stats sidebar -->
+                <aside class="side-col">
+                    <div class="side-card">
+                        <h3>Rate this movie</h3>
+                        <?php if (isset($_SESSION['user'])): ?>
+                            <?php [$rType, $rText] = $ratingMsg ? explode(':', $ratingMsg, 2) : ['', '']; ?>
+                            <form method="post" id="ratingForm">
+                                <div class="stars" id="starContainer">
+                                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                                        <span class="star <?= $i <= $userRating ? 'selected' : '' ?>" data-value="<?= $i ?>">&#9733;</span>
+                                    <?php endfor; ?>
+                                </div>
+                                <input type="hidden" name="rating_value" id="ratingValue" value="<?= $userRating ?>">
+                                <button type="submit" name="submit_rating" class="btn-rate">Submit Rating</button>
+                                <?php if ($rText): ?>
+                                    <p class="rating-msg <?= $rType ?>"><?= htmlspecialchars($rText) ?></p>
+                                <?php else: ?>
+                                    <p class="rating-msg" id="ratingMsg"><?= $userRating > 0 ? 'Your rating: ' . $userRating . ' / 5' : 'Click a star to rate' ?></p>
+                                <?php endif; ?>
+                            </form>
+                        <?php else: ?>
+                            <p style="color:#b3b3b3;font-size:0.9rem;"><a href="login.php" style="color:#e50914;">Log in</a> to rate this movie.</p>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="side-card">
+                        <h3>Details</h3>
+                        <div class="stat-row"><span class="label">Genre</span><span class="value"><?= htmlspecialchars($movie['genre_name']) ?></span></div>
+                        <?php if ($movie['release_year']): ?>
+                            <div class="stat-row"><span class="label">Year</span><span class="value"><?= (int)$movie['release_year'] ?></span></div>
+                        <?php endif; ?>
+                        <div class="stat-row"><span class="label">Creator</span><span class="value"><?= htmlspecialchars($movie['creator_name']) ?></span></div>
+                        <div class="stat-row"><span class="label">Views</span><span class="value"><?= (int)$movie['view_count'] ?></span></div>
+                        <div class="stat-row"><span class="label">Avg Rating</span><span class="value">&#9733; <?= number_format((float)$movie['avg_rating'],1) ?></span></div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
 
     <footer>
         <div class="container">
@@ -542,35 +534,25 @@ mysqli_stmt_close($commentsStmt);
     </footer>
 
     <script>
-        // Star rating interaction
-        const stars        = document.querySelectorAll('.star');
-        const ratingInput  = document.getElementById('ratingValue');
-        const ratingMsg    = document.getElementById('ratingMsg');
-        let currentRating  = <?= $userRating ?>;
+        const stars       = document.querySelectorAll('.star');
+        const ratingInput = document.getElementById('ratingValue');
+        const ratingMsg   = document.getElementById('ratingMsg');
+        let currentRating = <?= $userRating ?>;
 
         stars.forEach(star => {
             star.addEventListener('mouseenter', function() {
                 const val = parseInt(this.dataset.value);
-                stars.forEach(s => {
-                    s.classList.toggle('hovered', parseInt(s.dataset.value) <= val);
-                });
+                stars.forEach(s => s.classList.toggle('hovered', parseInt(s.dataset.value) <= val));
             });
-
-            star.addEventListener('mouseleave', function() {
-                stars.forEach(s => s.classList.remove('hovered'));
-            });
-
+            star.addEventListener('mouseleave', () => stars.forEach(s => s.classList.remove('hovered')));
             star.addEventListener('click', function() {
                 currentRating = parseInt(this.dataset.value);
-                ratingInput.value = currentRating;
-                stars.forEach(s => {
-                    s.classList.toggle('selected', parseInt(s.dataset.value) <= currentRating);
-                });
-                if (ratingMsg) ratingMsg.textContent = 'Rating selected: ' + currentRating + ' / 5';
+                if (ratingInput) ratingInput.value = currentRating;
+                stars.forEach(s => s.classList.toggle('selected', parseInt(s.dataset.value) <= currentRating));
+                if (ratingMsg) ratingMsg.textContent = 'Your rating: ' + currentRating + ' / 5';
             });
         });
 
-        // Comment JS validation
         const commentForm = document.getElementById('commentForm');
         if (commentForm) {
             commentForm.addEventListener('submit', function(e) {
@@ -578,7 +560,6 @@ mysqli_stmt_close($commentsStmt);
                 const msg  = document.getElementById('commentMsg');
                 if (msg) msg.textContent = '';
                 text.classList.remove('invalid');
-
                 if (!text.value.trim()) {
                     if (msg) { msg.textContent = 'Comment cannot be empty.'; msg.className = 'comment-msg err'; }
                     text.classList.add('invalid');

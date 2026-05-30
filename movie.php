@@ -371,7 +371,6 @@ mysqli_stmt_close($commentsStmt);
                 <li><a href="index.php">Home</a></li>
                 <li><a href="search.php">Search</a></li>
                 <?php if (isset($_SESSION['user'])): ?>
-                    <li><a href="#">Hello, <?= htmlspecialchars($_SESSION['user']['username']) ?></a></li>
                     <?php if ($_SESSION['user']['role'] === 'creator'): ?>
                         <li><a href="creator/index.php">My Movies</a></li>
                     <?php endif; ?>

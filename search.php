@@ -35,7 +35,6 @@ $conditions = ['m.is_published = 1'];
 $params     = [];
 $types      = '';
 
-// Full-text / title search
 if ($query !== '') {
     $conditions[] = "(MATCH(m.title, m.short_description) AGAINST(? IN BOOLEAN MODE) OR m.title LIKE ?)";
     $likeQuery    = '%' . $query . '%';
@@ -44,7 +43,6 @@ if ($query !== '') {
     $types       .= 'ss';
 }
 
-// Date range filter
 if ($dateFrom !== '') {
     $conditions[] = "DATE(m.created_at) >= ?";
     $params[]     = $dateFrom;
@@ -56,7 +54,6 @@ if ($dateTo !== '') {
     $types       .= 's';
 }
 
-// Creator filter
 if ($creatorId > 0) {
     $conditions[] = "m.creator_id = ?";
     $params[]     = $creatorId;
@@ -65,7 +62,6 @@ if ($creatorId > 0) {
 
 $whereClause = implode(' AND ', $conditions);
 
-// Sort
 $orderClause = match($sortBy) {
     'oldest'  => 'm.created_at ASC',
     'rating'  => 'avg_rating DESC, total_ratings DESC',
@@ -74,7 +70,7 @@ $orderClause = match($sortBy) {
     default   => 'm.created_at DESC',
 };
 
-// Count total results for pagination
+// Count total results
 $countSql  = "
     SELECT COUNT(DISTINCT m.movie_id) AS total
     FROM dbProj_movies m
@@ -126,9 +122,8 @@ while ($row = mysqli_fetch_assoc($res)) {
 }
 mysqli_stmt_close($stmt);
 
-// Build URL helper for pagination
 function buildPageUrl(int $p): string {
-    $params        = $_GET;
+    $params         = $_GET;
     $params['page'] = $p;
     return '?' . http_build_query($params);
 }
@@ -141,165 +136,207 @@ function buildPageUrl(int $p): string {
     <title>Search &middot; Movie Review</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* Hero search banner */
         .search-hero {
-            background: linear-gradient(135deg, #1f1f1f, #2a1a1a);
-            border-bottom: 1px solid #333;
-            padding: 2rem 0;
+            position: relative;
+            background:
+                radial-gradient(circle at 15% 30%, rgba(229,9,20,0.18), transparent 45%),
+                linear-gradient(135deg, #1c1c1c 0%, #141414 60%);
+            border-bottom: 1px solid #2a2a2a;
+            padding: 3rem 0 2.75rem;
+            overflow: hidden;
             margin-bottom: 2rem;
         }
-        .search-hero h2 { font-size: 1.6rem; margin-bottom: 1rem; }
+        .search-hero::after {
+            content: "";
+            position: absolute;
+            right: -60px;
+            top: -60px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(229,9,20,0.12), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .search-hero .container { position: relative; z-index: 1; }
+        .search-hero h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1.25rem;
+        }
         .search-bar {
             display: flex;
-            gap: 0.5rem;
-            max-width: 600px;
+            gap: 0.6rem;
+            max-width: 640px;
         }
         .search-bar input {
             flex: 1;
-            background: #141414;
+            background: rgba(20,20,20,0.85);
             color: #f5f5f5;
             border: 1px solid #444;
-            border-radius: 7px;
-            padding: 0.7rem 1rem;
+            border-radius: 10px;
+            padding: 0.85rem 1.1rem;
             font: inherit;
             font-size: 1rem;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .search-bar input:focus { outline: none; border-color: #e50914; }
+        .search-bar input:focus {
+            outline: none;
+            border-color: #e50914;
+            box-shadow: 0 0 0 3px rgba(229,9,20,0.15);
+        }
         .btn-search {
             background: #e50914;
             color: #fff;
             border: none;
-            border-radius: 7px;
-            padding: 0.7rem 1.4rem;
+            border-radius: 10px;
+            padding: 0.85rem 1.8rem;
             font: inherit;
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 1rem;
             cursor: pointer;
             white-space: nowrap;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
         }
         .btn-search:hover { background: #c40811; }
+        .btn-search:active { transform: scale(0.97); }
+
+        /* Polished filters */
         .filters-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.75rem;
+            gap: 1rem;
             align-items: flex-end;
             margin-bottom: 1.5rem;
-            background: #1f1f1f;
+            background: #1b1b1b;
             border: 1px solid #2a2a2a;
-            border-radius: 10px;
-            padding: 1rem 1.25rem;
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
         }
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: 0.35rem;
         }
-        .filter-group label { font-size: 0.78rem; color: #888; }
+        .filter-group label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #888;
+            font-weight: 600;
+        }
         .filter-group select,
         .filter-group input[type="date"] {
             background: #141414;
             color: #f5f5f5;
             border: 1px solid #333;
-            border-radius: 6px;
-            padding: 0.45rem 0.7rem;
+            border-radius: 9px;
+            padding: 0.6rem 0.85rem;
             font: inherit;
-            font-size: 0.88rem;
-            min-width: 150px;
-            transition: border-color 0.2s;
+            font-size: 0.9rem;
+            min-width: 165px;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
         .filter-group select:focus,
-        .filter-group input[type="date"]:focus { outline: none; border-color: #e50914; }
+        .filter-group input[type="date"]:focus {
+            outline: none;
+            border-color: #e50914;
+            box-shadow: 0 0 0 3px rgba(229,9,20,0.12);
+        }
         .btn-filter {
-            background: transparent;
-            color: #f5f5f5;
-            border: 1px solid #444;
-            border-radius: 6px;
-            padding: 0.45rem 0.9rem;
+            background: #e50914;
+            color: #fff;
+            border: none;
+            border-radius: 9px;
+            padding: 0.6rem 1.3rem;
             font: inherit;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: border-color 0.2s;
+            transition: background-color 0.2s;
             align-self: flex-end;
         }
-        .btn-filter:hover { border-color: #888; }
+        .btn-filter:hover { background: #c40811; }
         .btn-clear {
             background: transparent;
             color: #b3b3b3;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 0.45rem 0.9rem;
+            border: 1px solid #3a3a3a;
+            border-radius: 9px;
+            padding: 0.6rem 1.3rem;
             font: inherit;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             cursor: pointer;
             text-decoration: none;
             align-self: flex-end;
-            transition: color 0.2s;
+            transition: color 0.2s, border-color 0.2s;
         }
-        .btn-clear:hover { color: #f5f5f5; }
+        .btn-clear:hover { color: #f5f5f5; border-color: #666; }
+
         .results-header {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
         }
-        .results-header h3 { font-size: 1.1rem; }
-        .results-count { color: #888; font-size: 0.85rem; }
+        .results-header h3 { font-size: 1.2rem; font-weight: 700; }
+        .results-count { color: #888; font-size: 0.88rem; }
         .search-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 1.25rem;
             margin-bottom: 2rem;
         }
-        /* reuse movie-card styles from style.css */
         .no-results {
             text-align: center;
-            padding: 3rem;
+            padding: 3.5rem;
             color: #b3b3b3;
-            background: #1f1f1f;
-            border-radius: 10px;
+            background: #1b1b1b;
+            border-radius: 14px;
             border: 1px dashed #333;
         }
         .no-results p { margin-bottom: 0.5rem; }
+
         /* Pagination */
         .pagination {
             display: flex;
             gap: 0.4rem;
             justify-content: center;
             flex-wrap: wrap;
-            margin: 1.5rem 0;
+            margin: 2rem 0;
         }
         .pagination a,
         .pagination span {
             display: inline-block;
-            padding: 0.45rem 0.85rem;
-            border-radius: 6px;
-            font-size: 0.88rem;
+            padding: 0.5rem 0.95rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
             text-decoration: none;
-            border: 1px solid #333;
+            border: 1px solid #2f2f2f;
             color: #f5f5f5;
             transition: background-color 0.15s, border-color 0.15s;
         }
-        .pagination a:hover { background: #2a2a2a; border-color: #555; }
+        .pagination a:hover { background: #242424; border-color: #555; }
         .pagination span.current {
             background: #e50914;
             border-color: #e50914;
             color: #fff;
-            font-weight: 600;
+            font-weight: 700;
         }
         .pagination span.dots { border-color: transparent; color: #666; }
+
         .active-filters {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.4rem;
-            margin-bottom: 1rem;
+            gap: 0.45rem;
+            margin-bottom: 1.25rem;
         }
         .filter-tag {
             background: rgba(229,9,20,0.12);
             border: 1px solid rgba(229,9,20,0.3);
             color: #f87171;
             border-radius: 999px;
-            padding: 0.2rem 0.65rem;
-            font-size: 0.76rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.78rem;
         }
     </style>
 </head>
@@ -336,7 +373,6 @@ function buildPageUrl(int $p): string {
                            value="<?= htmlspecialchars($query) ?>"
                            placeholder="Search by title or description..."
                            autocomplete="off">
-                    <!-- preserve other filters when searching -->
                     <?php if ($dateFrom): ?><input type="hidden" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>"><?php endif; ?>
                     <?php if ($dateTo):   ?><input type="hidden" name="date_to"   value="<?= htmlspecialchars($dateTo) ?>"><?php endif; ?>
                     <?php if ($creatorId): ?><input type="hidden" name="creator"  value="<?= $creatorId ?>"><?php endif; ?>
@@ -359,7 +395,7 @@ function buildPageUrl(int $p): string {
                         <option value="oldest"  <?= $sortBy === 'oldest'  ? 'selected' : '' ?>>Oldest first</option>
                         <option value="rating"  <?= $sortBy === 'rating'  ? 'selected' : '' ?>>Top rated</option>
                         <option value="views"   <?= $sortBy === 'views'   ? 'selected' : '' ?>>Most viewed</option>
-                        <option value="title"   <?= $sortBy === 'title'   ? 'selected' : '' ?>>Title A–Z</option>
+                        <option value="title"   <?= $sortBy === 'title'   ? 'selected' : '' ?>>Title A&ndash;Z</option>
                     </select>
                 </div>
 
@@ -455,7 +491,7 @@ function buildPageUrl(int $p): string {
                         <div class="movie-body">
                             <h4 class="movie-title"><?= htmlspecialchars($movie['title']) ?></h4>
                             <p class="movie-meta">
-                                <?= htmlspecialchars($movie['release_year'] ?? '—') ?>
+                                <?= htmlspecialchars($movie['release_year'] ?? '&mdash;') ?>
                                 &middot; by
                                 <a href="?creator=<?= (int)$movie['creator_id'] ?>"
                                    style="color:#e50914;text-decoration:none;">
@@ -480,7 +516,7 @@ function buildPageUrl(int $p): string {
             <?php if ($totalPages > 1): ?>
                 <div class="pagination">
                     <?php if ($page > 1): ?>
-                        <a href="<?= buildPageUrl($page - 1) ?>">← Prev</a>
+                        <a href="<?= buildPageUrl($page - 1) ?>">&larr; Prev</a>
                     <?php endif; ?>
 
                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
@@ -489,12 +525,12 @@ function buildPageUrl(int $p): string {
                         <?php elseif ($i === 1 || $i === $totalPages || abs($i - $page) <= 2): ?>
                             <a href="<?= buildPageUrl($i) ?>"><?= $i ?></a>
                         <?php elseif (abs($i - $page) === 3): ?>
-                            <span class="dots">…</span>
+                            <span class="dots">&hellip;</span>
                         <?php endif; ?>
                     <?php endfor; ?>
 
                     <?php if ($page < $totalPages): ?>
-                        <a href="<?= buildPageUrl($page + 1) ?>">Next →</a>
+                        <a href="<?= buildPageUrl($page + 1) ?>">Next &rarr;</a>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
@@ -506,16 +542,6 @@ function buildPageUrl(int $p): string {
             <p>&copy; <?= date('Y') ?> Movie Review</p>
         </div>
     </footer>
-
-    <script>
-        // Live search suggestion — clear page param on new search
-        document.getElementById('searchInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const url = new URL(window.location.href);
-                url.searchParams.delete('page');
-            }
-        });
-    </script>
 </body>
 </html>
 <?php mysqli_close($dbc); ?>

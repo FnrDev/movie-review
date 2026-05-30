@@ -140,10 +140,10 @@ function buildPageUrl(int $p): string {
         .search-hero {
             position: relative;
             background:
-                radial-gradient(circle at 15% 30%, rgba(229,9,20,0.18), transparent 45%),
+                radial-gradient(circle at 15% 30%, rgba(229,9,20,0.20), transparent 45%),
                 linear-gradient(135deg, #1c1c1c 0%, #141414 60%);
             border-bottom: 1px solid #2a2a2a;
-            padding: 3rem 0 2.75rem;
+            padding: 3.5rem 0 3rem;
             overflow: hidden;
             margin-bottom: 2rem;
         }
@@ -160,37 +160,42 @@ function buildPageUrl(int $p): string {
         }
         .search-hero .container { position: relative; z-index: 1; }
         .search-hero h2 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 800;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
         }
+        /* Search bar + button joined as ONE unit */
         .search-bar {
             display: flex;
-            gap: 0.6rem;
-            max-width: 640px;
+            max-width: 680px;
+            background: rgba(15,15,15,0.9);
+            border: 1px solid #3a3a3a;
+            border-radius: 14px;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-bar:focus-within {
+            border-color: #e50914;
+            box-shadow: 0 0 0 4px rgba(229,9,20,0.15);
         }
         .search-bar input {
             flex: 1;
-            background: rgba(20,20,20,0.85);
+            background: transparent;
             color: #f5f5f5;
-            border: 1px solid #444;
-            border-radius: 10px;
-            padding: 0.85rem 1.1rem;
+            border: none;
+            padding: 1.1rem 1.4rem;
             font: inherit;
-            font-size: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 1.05rem;
         }
-        .search-bar input:focus {
-            outline: none;
-            border-color: #e50914;
-            box-shadow: 0 0 0 3px rgba(229,9,20,0.15);
-        }
+        .search-bar input:focus { outline: none; }
+        .search-bar input::placeholder { color: #777; }
         .btn-search {
             background: #e50914;
             color: #fff;
             border: none;
+            padding: 0 2.2rem;
+            margin: 0.4rem;
             border-radius: 10px;
-            padding: 0.85rem 1.8rem;
             font: inherit;
             font-weight: 700;
             font-size: 1rem;
@@ -208,63 +213,99 @@ function buildPageUrl(int $p): string {
             gap: 1rem;
             align-items: flex-end;
             margin-bottom: 1.5rem;
-            background: #1b1b1b;
-            border: 1px solid #2a2a2a;
-            border-radius: 14px;
-            padding: 1.25rem 1.5rem;
+            background: linear-gradient(180deg, #1e1e1e, #181818);
+            border: 1px solid #2e2e2e;
+            border-radius: 16px;
+            padding: 1.4rem 1.6rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 0.35rem;
+            gap: 0.4rem;
         }
         .filter-group label {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #888;
-            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: #9a9a9a;
+            font-weight: 700;
         }
-        .filter-group select,
-        .filter-group input[type="date"] {
-            background: #141414;
+        .filter-group select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #0f0f0f;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e50914' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.85rem center;
             color: #f5f5f5;
-            border: 1px solid #333;
-            border-radius: 9px;
-            padding: 0.6rem 0.85rem;
+            border: 1px solid #383838;
+            border-radius: 10px;
+            padding: 0.7rem 2.4rem 0.7rem 1rem;
             font: inherit;
-            font-size: 0.9rem;
-            min-width: 165px;
+            font-size: 0.92rem;
+            min-width: 175px;
+            height: 46px;
+            cursor: pointer;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .filter-group select:focus,
+        .filter-group select:hover { border-color: #555; }
+        .filter-group select:focus {
+            outline: none;
+            border-color: #e50914;
+            box-shadow: 0 0 0 3px rgba(229,9,20,0.15);
+        }
+        .filter-group input[type="date"] {
+            background-color: #0f0f0f;
+            color: #f5f5f5;
+            border: 1px solid #383838;
+            border-radius: 10px;
+            padding: 0.7rem 1rem;
+            font: inherit;
+            font-size: 0.92rem;
+            min-width: 175px;
+            height: 46px;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .filter-group input[type="date"]:hover { border-color: #555; }
         .filter-group input[type="date"]:focus {
             outline: none;
             border-color: #e50914;
-            box-shadow: 0 0 0 3px rgba(229,9,20,0.12);
+            box-shadow: 0 0 0 3px rgba(229,9,20,0.15);
+        }
+        .filter-group input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(28%) sepia(96%) saturate(5000%) hue-rotate(353deg) brightness(90%);
+            cursor: pointer;
         }
         .btn-filter {
             background: #e50914;
             color: #fff;
             border: none;
-            border-radius: 9px;
-            padding: 0.6rem 1.3rem;
+            border-radius: 10px;
+            padding: 0 1.5rem;
+            height: 46px;
             font: inherit;
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.92rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
             align-self: flex-end;
         }
         .btn-filter:hover { background: #c40811; }
+        .btn-filter:active { transform: scale(0.97); }
         .btn-clear {
             background: transparent;
             color: #b3b3b3;
             border: 1px solid #3a3a3a;
-            border-radius: 9px;
-            padding: 0.6rem 1.3rem;
+            border-radius: 10px;
+            padding: 0 1.5rem;
+            height: 46px;
+            display: inline-flex;
+            align-items: center;
             font: inherit;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             cursor: pointer;
             text-decoration: none;
             align-self: flex-end;

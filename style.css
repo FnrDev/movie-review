@@ -231,3 +231,18 @@ footer {
     font-weight: 600;
 }
 .view-more:hover { text-decoration: underline; }
+
+.nav-links a[href="#"] {
+    cursor: default;
+    color: #b3b3b3 !important;
+    pointer-events: none;
+}
+
+.creator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #333;
+}

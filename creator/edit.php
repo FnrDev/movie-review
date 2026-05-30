@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 poster_image=?, trailer_url=?, release_year=?, is_published=?
             WHERE movie_id=? AND creator_id=?
         ");
-        mysqli_stmt_bind_param($stmt, 'isssssiii i',
+        mysqli_stmt_bind_param($stmt, 'isssssiiii',
             $genreId, $title, $shortDescription, $fullDescription,
             $posterImage, $trailerUrl, $releaseYearVal, $publish,
             $movieId, $creatorId

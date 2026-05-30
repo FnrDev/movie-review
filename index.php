@@ -33,22 +33,51 @@ $result = mysqli_query($dbc, $sql);
     <title>Movie Review</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .welcome-bar {
-            background-color: #1a1a1a;
+        /* Hero banner */
+        .hero-banner {
+            position: relative;
+            background:
+                radial-gradient(circle at 15% 30%, rgba(229,9,20,0.18), transparent 45%),
+                linear-gradient(135deg, #1c1c1c 0%, #141414 60%);
             border-bottom: 1px solid #2a2a2a;
-            padding: 0.6rem 0;
+            padding: 3.5rem 0 3rem;
+            overflow: hidden;
         }
-        .welcome-bar .container {
-            display: flex;
-            align-items: center;
+        .hero-banner::after {
+            content: "";
+            position: absolute;
+            right: -60px;
+            top: -60px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(229,9,20,0.12), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
         }
-        .welcome-bar p {
+        .hero-banner .container { position: relative; z-index: 1; }
+        .hero-greeting {
+            display: inline-block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #e50914;
+            margin-bottom: 0.75rem;
+        }
+        .hero-banner h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 0.75rem;
+            max-width: 620px;
+        }
+        .hero-banner p.tagline {
             color: #b3b3b3;
-            font-size: 0.9rem;
-            margin: 0;
+            font-size: 1.1rem;
+            max-width: 520px;
         }
-        .welcome-bar strong {
-            color: #f5f5f5;
+        @media (max-width: 600px) {
+            .hero-banner h1 { font-size: 1.9rem; }
         }
     </style>
 </head>
@@ -75,20 +104,18 @@ $result = mysqli_query($dbc, $sql);
         </nav>
     </header>
 
-    <?php if (isset($_SESSION['user'])): ?>
-        <div class="welcome-bar">
-            <div class="container">
-                <p>Welcome back, <strong><?= htmlspecialchars($_SESSION['user']['username']) ?></strong></p>
-            </div>
+    <!-- Hero -->
+    <section class="hero-banner">
+        <div class="container">
+            <?php if (isset($_SESSION['user'])): ?>
+                <span class="hero-greeting">Welcome back, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+            <?php endif; ?>
+            <h1>Discover &amp; review<br>your favorite movies</h1>
+            <p class="tagline">Browse the latest titles, rate what you've watched, and share your thoughts with the community.</p>
         </div>
-    <?php endif; ?>
+    </section>
 
     <main class="container">
-        <section class="hero">
-            <h2>Welcome to Movie Review</h2>
-            <p>Discover and review your favorite movies.</p>
-        </section>
-
         <section class="movies">
             <div class="section-head">
                 <h3>Latest Movies</h3>

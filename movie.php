@@ -347,6 +347,32 @@ if (!empty($movie['trailer_url'])) {
             font-size: 0.88rem; margin: 1.25rem 0; transition: color 0.2s;
         }
         .back-link:hover { color: #fff; }
+        /* Back link floating over the hero */
+        .hero-back {
+            position: absolute;
+            top: 1.5rem;
+            left: 0; right: 0;
+            z-index: 3;
+        }
+        .hero-back a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #f5f5f5;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .hero-back a:hover {
+            background: rgba(0,0,0,0.6);
+            border-color: rgba(255,255,255,0.25);
+        }
     </style>
 </head>
 <body>
@@ -380,6 +406,12 @@ if (!empty($movie['trailer_url'])) {
             <div class="backdrop-fallback"></div>
         <?php endif; ?>
         <div class="backdrop-overlay"></div>
+
+        <div class="hero-back">
+            <div class="container">
+                <a href="index.php">&larr; Back to movies</a>
+            </div>
+        </div>
 
         <div class="backdrop-content">
             <div class="container">
@@ -415,8 +447,6 @@ if (!empty($movie['trailer_url'])) {
 
     <div class="detail-body">
         <div class="container">
-            <a href="index.php" class="back-link">&larr; Back to movies</a>
-
             <div class="content-grid">
                 <!-- Left: synopsis + trailer + comments -->
                 <div class="main-col">

@@ -32,6 +32,25 @@ $result = mysqli_query($dbc, $sql);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Review</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .welcome-bar {
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            padding: 0.6rem 0;
+        }
+        .welcome-bar .container {
+            display: flex;
+            align-items: center;
+        }
+        .welcome-bar p {
+            color: #b3b3b3;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        .welcome-bar strong {
+            color: #f5f5f5;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -41,7 +60,6 @@ $result = mysqli_query($dbc, $sql);
                 <li><a href="index.php">Home</a></li>
                 <li><a href="search.php">Search</a></li>
                 <?php if (isset($_SESSION['user'])): ?>
-                    <li><a href="#">Hello, <?= htmlspecialchars($_SESSION['user']['username']) ?></a></li>
                     <?php if ($_SESSION['user']['role'] === 'creator'): ?>
                         <li><a href="creator/index.php">My Movies</a></li>
                     <?php endif; ?>
@@ -56,6 +74,14 @@ $result = mysqli_query($dbc, $sql);
             </ul>
         </nav>
     </header>
+
+    <?php if (isset($_SESSION['user'])): ?>
+        <div class="welcome-bar">
+            <div class="container">
+                <p>Welcome back, <strong><?= htmlspecialchars($_SESSION['user']['username']) ?></strong></p>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <main class="container">
         <section class="hero">
@@ -88,7 +114,7 @@ $result = mysqli_query($dbc, $sql);
                             <div class="movie-body">
                                 <h4 class="movie-title"><?= htmlspecialchars($movie['title']) ?></h4>
                                 <p class="movie-meta">
-                                    <?= htmlspecialchars($movie['release_year'] ?? '—') ?>
+                                    <?= htmlspecialchars($movie['release_year'] ?? '&mdash;') ?>
                                     &middot; by <?= htmlspecialchars($movie['creator_name']) ?>
                                 </p>
                                 <p class="movie-desc">

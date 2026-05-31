@@ -64,65 +64,7 @@ if (isset($_SESSION['user'])) {
     mysqli_stmt_close($rateCheck);
 }
 
-// Handle rating submission
-$ratingMsg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_rating'])) {
-    if (!isset($_SESSION['user'])) {
-        $ratingMsg = 'error:You must be logged in to rate.';
-    } else {
-        $userId      = (int) $_SESSION['user']['user_id'];
-        $ratingValue = (int) ($_POST['rating_value'] ?? 0);
-        if ($ratingValue < 1 || $ratingValue > 5) {
-            $ratingMsg = 'error:Please select a rating between 1 and 5.';
-        } else {
-            $stmt = mysqli_prepare($dbc, "
-                INSERT INTO dbProj_ratings (movie_id, user_id, rating_value)
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE rating_value = VALUES(rating_value)
-            ");
-            mysqli_stmt_bind_param($stmt, 'iii', $movieId, $userId, $ratingValue);
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
-            $userRating = $ratingValue;
-            $ratingMsg  = 'ok:Rating saved!';
-            $res2 = mysqli_query($dbc, "
-                SELECT COALESCE(ROUND(AVG(rating_value),1),0) AS avg_rating,
-                       COUNT(*) AS total_ratings
-                FROM dbProj_ratings WHERE movie_id = $movieId
-            ");
-            $ratingStats            = mysqli_fetch_assoc($res2);
-            $movie['avg_rating']    = $ratingStats['avg_rating'];
-            $movie['total_ratings'] = $ratingStats['total_ratings'];
-        }
-    }
-}
-
-// Handle comment submission
-$commentMsg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_comment'])) {
-    if (!isset($_SESSION['user'])) {
-        $commentMsg = 'error:You must be logged in to comment.';
-    } else {
-        $userId  = (int) $_SESSION['user']['user_id'];
-        $comment = trim($_POST['comment_text'] ?? '');
-        if (empty($comment)) {
-            $commentMsg = 'error:Comment cannot be empty.';
-        } elseif (strlen($comment) > 1000) {
-            $commentMsg = 'error:Comment must be under 1000 characters.';
-        } else {
-            $stmt = mysqli_prepare($dbc,
-                "INSERT INTO dbProj_comments (movie_id, user_id, comment_text) VALUES (?, ?, ?)"
-            );
-            mysqli_stmt_bind_param($stmt, 'iis', $movieId, $userId, $comment);
-            if (mysqli_stmt_execute($stmt)) {
-                $commentMsg = 'ok:Comment posted!';
-            } else {
-                $commentMsg = 'error:Failed to post comment.';
-            }
-            mysqli_stmt_close($stmt);
-        }
-    }
-}
+// Rating and comment submissions are handled via AJAX (ajax_handler.php)
 
 // Fetch comments
 $commentsStmt = mysqli_prepare($dbc, "
@@ -515,11 +457,10 @@ if (!empty($movie['trailer_url'])) {
 
                     <!-- Comments -->
                     <div class="comments-section">
-                        <h2 class="section-title">Comments (<?= count($comments) ?>)</h2>
-                        <?php [$cType, $cText] = $commentMsg ? explode(':', $commentMsg, 2) : ['', '']; ?>
+                        <h2 class="section-title" id="commentsTitle">Comments (<?= count($comments) ?>)</h2>
 
                         <?php if (isset($_SESSION['user'])):
-                            $meName = $_SESSION['user']['username'];
+                            $meName  = $_SESSION['user']['username'];
                             $meColor = 'hsl(' . (crc32($meName) % 360) . ', 60%, 45%)';
                         ?>
                             <div class="comment-box-wrap">
@@ -527,18 +468,14 @@ if (!empty($movie['trailer_url'])) {
                                     <span class="me-avatar" style="background:<?= $meColor ?>;"><?= htmlspecialchars(substr($meName,0,1)) ?></span>
                                     <span class="me-label">Commenting as <strong><?= htmlspecialchars($meName) ?></strong></span>
                                 </div>
-                                <form method="post" id="commentForm" class="comment-form" novalidate>
+                                <form id="commentForm" class="comment-form" novalidate>
                                     <textarea name="comment_text" id="commentText"
                                               placeholder="Share your thoughts about this movie..." maxlength="1000"></textarea>
                                     <div class="comment-form-footer">
                                         <span class="char-counter" id="charCounter">0 / 1000</span>
-                                        <button type="submit" name="submit_comment" class="btn-comment">Post Comment</button>
+                                        <button type="submit" class="btn-comment">Post Comment</button>
                                     </div>
-                                    <?php if ($cText): ?>
-                                        <p class="comment-msg <?= $cType ?>"><?= htmlspecialchars($cText) ?></p>
-                                    <?php else: ?>
-                                        <p class="comment-msg" id="commentMsg"></p>
-                                    <?php endif; ?>
+                                    <p class="comment-msg" id="commentMsg"></p>
                                 </form>
                             </div>
                         <?php else: ?>
@@ -576,20 +513,15 @@ if (!empty($movie['trailer_url'])) {
                     <div class="side-card">
                         <h3>Rate this movie</h3>
                         <?php if (isset($_SESSION['user'])): ?>
-                            <?php [$rType, $rText] = $ratingMsg ? explode(':', $ratingMsg, 2) : ['', '']; ?>
-                            <form method="post" id="ratingForm">
+                            <form id="ratingForm">
                                 <div class="stars" id="starContainer">
                                     <?php for ($i = 1; $i <= 5; $i++): ?>
                                         <span class="star <?= $i <= $userRating ? 'selected' : '' ?>" data-value="<?= $i ?>">&#9733;</span>
                                     <?php endfor; ?>
                                 </div>
-                                <input type="hidden" name="rating_value" id="ratingValue" value="<?= $userRating ?>">
-                                <button type="submit" name="submit_rating" class="btn-rate">Submit Rating</button>
-                                <?php if ($rText): ?>
-                                    <p class="rating-msg <?= $rType ?>"><?= htmlspecialchars($rText) ?></p>
-                                <?php else: ?>
-                                    <p class="rating-msg" id="ratingMsg"><?= $userRating > 0 ? 'Your rating: ' . $userRating . ' / 5' : 'Click a star to rate' ?></p>
-                                <?php endif; ?>
+                                <input type="hidden" id="ratingValue" value="<?= $userRating ?>">
+                                <button type="submit" class="btn-rate">Submit Rating</button>
+                                <p class="rating-msg" id="ratingMsg"><?= $userRating > 0 ? 'Your rating: ' . $userRating . ' / 5' : 'Click a star to rate' ?></p>
                             </form>
                         <?php else: ?>
                             <p style="color:#b3b3b3;font-size:0.9rem;"><a href="login.php" style="color:#e50914;">Log in</a> to rate this movie.</p>
@@ -618,18 +550,36 @@ if (!empty($movie['trailer_url'])) {
     </footer>
 
     <script>
+        const MOVIE_ID = <?= $movieId ?>;
+
+        //Helpers
+        function setMsg(el, text, isOk) {
+            if (!el) return;
+            el.textContent  = text;
+            el.className    = 'rating-msg' === el.id || 'ratingMsg' === el.id
+                ? 'rating-msg ' + (isOk ? 'ok' : 'err')
+                : 'comment-msg ' + (isOk ? 'ok' : 'err');
+        }
+
+        function post(data) {
+            data.append('movie_id', MOVIE_ID);
+            return fetch('ajax_handler.php', { method: 'POST', body: data }).then(r => r.json());
+        }
+
+        //Rating
         const stars       = document.querySelectorAll('.star');
         const ratingInput = document.getElementById('ratingValue');
         const ratingMsg   = document.getElementById('ratingMsg');
+        const ratingForm  = document.getElementById('ratingForm');
         let currentRating = <?= $userRating ?>;
 
         stars.forEach(star => {
-            star.addEventListener('mouseenter', function() {
+            star.addEventListener('mouseenter', function () {
                 const val = parseInt(this.dataset.value);
                 stars.forEach(s => s.classList.toggle('hovered', parseInt(s.dataset.value) <= val));
             });
             star.addEventListener('mouseleave', () => stars.forEach(s => s.classList.remove('hovered')));
-            star.addEventListener('click', function() {
+            star.addEventListener('click', function () {
                 currentRating = parseInt(this.dataset.value);
                 if (ratingInput) ratingInput.value = currentRating;
                 stars.forEach(s => s.classList.toggle('selected', parseInt(s.dataset.value) <= currentRating));
@@ -637,29 +587,129 @@ if (!empty($movie['trailer_url'])) {
             });
         });
 
+        if (ratingForm) {
+            ratingForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                if (currentRating < 1) {
+                    setMsg(ratingMsg, 'Please select a star first.', false);
+                    return;
+                }
+
+                const btn = ratingForm.querySelector('.btn-rate');
+                btn.disabled    = true;
+                btn.textContent = 'Saving…';
+
+                const fd = new FormData();
+                fd.append('action', 'rate');
+                fd.append('rating_value', currentRating);
+
+                post(fd).then(res => {
+                    setMsg(ratingMsg, res.message, res.ok);
+                    if (res.ok) {
+                        // Update the rating badge in the hero
+                        const badge = document.querySelector('.rating-badge');
+                        if (badge) badge.innerHTML =
+                            '&#9733; ' + res.avg_rating +
+                            ' <small>(' + res.total_ratings + ' ratings)</small>';
+                    }
+                }).catch(() => setMsg(ratingMsg, 'Network error. Please try again.', false))
+                  .finally(() => { btn.disabled = false; btn.textContent = 'Submit Rating'; });
+            });
+        }
+
+        //Comments
         const commentForm = document.getElementById('commentForm');
         if (commentForm) {
             const text    = document.getElementById('commentText');
             const counter = document.getElementById('charCounter');
+            const commentMsg = document.getElementById('commentMsg');
 
             // Live character counter
-            text.addEventListener('input', function() {
+            text.addEventListener('input', function () {
                 const len = text.value.length;
                 counter.textContent = len + ' / 1000';
                 counter.classList.toggle('warn', len > 800 && len <= 1000);
                 counter.classList.toggle('over', len > 1000);
             });
 
-            commentForm.addEventListener('submit', function(e) {
-                const msg = document.getElementById('commentMsg');
-                if (msg) msg.textContent = '';
+            commentForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
                 text.classList.remove('invalid');
+                setMsg(commentMsg, '', true);
+
                 if (!text.value.trim()) {
-                    if (msg) { msg.textContent = 'Comment cannot be empty.'; msg.className = 'comment-msg err'; }
+                    setMsg(commentMsg, 'Comment cannot be empty.', false);
                     text.classList.add('invalid');
-                    e.preventDefault();
+                    return;
                 }
+
+                const btn = commentForm.querySelector('.btn-comment');
+                btn.disabled    = true;
+                btn.textContent = 'Posting…';
+
+                const fd = new FormData();
+                fd.append('action', 'comment');
+                fd.append('comment_text', text.value.trim());
+
+                post(fd).then(res => {
+                    if (!res.ok) {
+                        setMsg(commentMsg, res.message, false);
+                        return;
+                    }
+
+                    setMsg(commentMsg, res.message, true);
+                    text.value          = '';
+                    counter.textContent = '0 / 1000';
+                    counter.classList.remove('warn', 'over');
+
+                    // Prepend new comment card without page reload
+                    const color   = 'hsl(' + hashColor(res.username) + ', 60%, 45%)';
+                    const initial = res.username.charAt(0).toUpperCase();
+                    const card    = document.createElement('div');
+                    card.className = 'comment-card';
+                    card.innerHTML =
+                        '<div class="comment-header">' +
+                            '<span class="comment-avatar">' +
+                                '<span class="avatar-circle" style="background:' + color + ';">' + initial + '</span>' +
+                                '<span class="comment-author">' + escHtml(res.username) + '</span>' +
+                            '</span>' +
+                            '<span class="comment-date">' + escHtml(res.created_at) + '</span>' +
+                        '</div>' +
+                        '<p class="comment-text">' + escHtml(res.text).replace(/\n/g, '<br>') + '</p>';
+
+                    // Remove "no comments" placeholder if present
+                    const placeholder = document.querySelector('.no-comments');
+                    if (placeholder) placeholder.remove();
+
+                    // Insert before the first existing card (newest first)
+                    const list  = document.querySelector('.comments-section');
+                    const first = list.querySelector('.comment-card');
+                    first ? list.insertBefore(card, first) : list.appendChild(card);
+
+                    // Update the section counter
+                    const title = document.getElementById('commentsTitle');
+                    if (title) {
+                        const match = title.textContent.match(/\d+/);
+                        const count = match ? parseInt(match[0]) + 1 : 1;
+                        title.textContent = 'Comments (' + count + ')';
+                    }
+                }).catch(() => setMsg(commentMsg, 'Network error. Please try again.', false))
+                  .finally(() => { btn.disabled = false; btn.textContent = 'Post Comment'; });
             });
+        }
+
+        //Utilities
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function hashColor(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+            return ((h >>> 0) % 360);
         }
     </script>
 </body>

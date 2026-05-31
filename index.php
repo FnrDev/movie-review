@@ -176,43 +176,25 @@ $result = mysqli_stmt_get_result($stmt);
             <?php endif; ?>
 
             <?php if ($totalPages > 1): ?>
-            <nav class="pagination" aria-label="Movie pages">
-                <?php if ($currentPage > 1): ?>
-                    <a href="?page=<?= $currentPage - 1 ?>" class="page-btn" aria-label="Previous">&lsaquo; Prev</a>
-                <?php else: ?>
-                    <span class="page-btn disabled">&lsaquo; Prev</span>
-                <?php endif; ?>
-
-                <?php
-                // Show at most 5 page numbers centred on current page
-                $start = max(1, $currentPage - 2);
-                $end   = min($totalPages, $start + 4);
-                $start = max(1, $end - 4); // re-clamp start if near the end
-
-                if ($start > 1): ?>
-                    <a href="?page=1" class="page-btn">1</a>
-                    <?php if ($start > 2): ?><span class="page-ellipsis">&hellip;</span><?php endif; ?>
-                <?php endif; ?>
-
-                <?php for ($p = $start; $p <= $end; $p++): ?>
-                    <?php if ($p === $currentPage): ?>
-                        <span class="page-btn active"><?= $p ?></span>
-                    <?php else: ?>
-                        <a href="?page=<?= $p ?>" class="page-btn"><?= $p ?></a>
+                <div class="pagination">
+                    <?php if ($currentPage > 1): ?>
+                        <a href="?page=<?= $currentPage - 1 ?>">&larr; Prev</a>
                     <?php endif; ?>
-                <?php endfor; ?>
 
-                <?php if ($end < $totalPages): ?>
-                    <?php if ($end < $totalPages - 1): ?><span class="page-ellipsis">&hellip;</span><?php endif; ?>
-                    <a href="?page=<?= $totalPages ?>" class="page-btn"><?= $totalPages ?></a>
-                <?php endif; ?>
+                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <?php if ($i === $currentPage): ?>
+                            <span class="current"><?= $i ?></span>
+                        <?php elseif ($i === 1 || $i === $totalPages || abs($i - $currentPage) <= 2): ?>
+                            <a href="?page=<?= $i ?>"><?= $i ?></a>
+                        <?php elseif (abs($i - $currentPage) === 3): ?>
+                            <span class="dots">&hellip;</span>
+                        <?php endif; ?>
+                    <?php endfor; ?>
 
-                <?php if ($currentPage < $totalPages): ?>
-                    <a href="?page=<?= $currentPage + 1 ?>" class="page-btn" aria-label="Next">Next &rsaquo;</a>
-                <?php else: ?>
-                    <span class="page-btn disabled">Next &rsaquo;</span>
-                <?php endif; ?>
-            </nav>
+                    <?php if ($currentPage < $totalPages): ?>
+                        <a href="?page=<?= $currentPage + 1 ?>">Next &rarr;</a>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </section>
     </main>

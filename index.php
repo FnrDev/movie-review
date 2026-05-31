@@ -3,7 +3,18 @@ session_start();
 require_once 'config.php';
 $dbc = get_db_connection();
 
-$sql = "
+//Pagination
+$perPage     = 8;
+$currentPage = max(1, (int)($_GET['page'] ?? 1));
+$offset      = ($currentPage - 1) * $perPage;
+
+// Total published movies (for page count)
+$countRes  = mysqli_query($dbc, "SELECT COUNT(*) FROM dbProj_movies WHERE is_published = 1");
+$totalRows = (int)mysqli_fetch_row($countRes)[0];
+$totalPages = (int)ceil($totalRows / $perPage);
+$currentPage = min($currentPage, max(1, $totalPages)); 
+
+$stmt = mysqli_prepare($dbc, "
     SELECT
         m.movie_id,
         m.title,
@@ -22,8 +33,11 @@ $sql = "
     WHERE m.is_published = 1
     GROUP BY m.movie_id
     ORDER BY m.created_at DESC
-";
-$result = mysqli_query($dbc, $sql);
+    LIMIT ? OFFSET ?
+");
+mysqli_stmt_bind_param($stmt, 'ii', $perPage, $offset);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,7 +133,7 @@ $result = mysqli_query($dbc, $sql);
         <section class="movies">
             <div class="section-head">
                 <h3>Latest Movies</h3>
-                <span class="count"><?= mysqli_num_rows($result) ?> titles</span>
+                <span class="count"><?= $totalRows ?> title<?= $totalRows !== 1 ? 's' : '' ?></span>
             </div>
 
             <?php if (mysqli_num_rows($result) === 0): ?>
@@ -160,6 +174,46 @@ $result = mysqli_query($dbc, $sql);
                     <?php endwhile; ?>
                 </div>
             <?php endif; ?>
+
+            <?php if ($totalPages > 1): ?>
+            <nav class="pagination" aria-label="Movie pages">
+                <?php if ($currentPage > 1): ?>
+                    <a href="?page=<?= $currentPage - 1 ?>" class="page-btn" aria-label="Previous">&lsaquo; Prev</a>
+                <?php else: ?>
+                    <span class="page-btn disabled">&lsaquo; Prev</span>
+                <?php endif; ?>
+
+                <?php
+                // Show at most 5 page numbers centred on current page
+                $start = max(1, $currentPage - 2);
+                $end   = min($totalPages, $start + 4);
+                $start = max(1, $end - 4); // re-clamp start if near the end
+
+                if ($start > 1): ?>
+                    <a href="?page=1" class="page-btn">1</a>
+                    <?php if ($start > 2): ?><span class="page-ellipsis">&hellip;</span><?php endif; ?>
+                <?php endif; ?>
+
+                <?php for ($p = $start; $p <= $end; $p++): ?>
+                    <?php if ($p === $currentPage): ?>
+                        <span class="page-btn active"><?= $p ?></span>
+                    <?php else: ?>
+                        <a href="?page=<?= $p ?>" class="page-btn"><?= $p ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($end < $totalPages): ?>
+                    <?php if ($end < $totalPages - 1): ?><span class="page-ellipsis">&hellip;</span><?php endif; ?>
+                    <a href="?page=<?= $totalPages ?>" class="page-btn"><?= $totalPages ?></a>
+                <?php endif; ?>
+
+                <?php if ($currentPage < $totalPages): ?>
+                    <a href="?page=<?= $currentPage + 1 ?>" class="page-btn" aria-label="Next">Next &rsaquo;</a>
+                <?php else: ?>
+                    <span class="page-btn disabled">Next &rsaquo;</span>
+                <?php endif; ?>
+            </nav>
+            <?php endif; ?>
         </section>
     </main>
 
@@ -172,5 +226,6 @@ $result = mysqli_query($dbc, $sql);
 </html>
 <?php
 mysqli_free_result($result);
+mysqli_stmt_close($stmt);
 mysqli_close($dbc);
 ?>

@@ -246,3 +246,52 @@ footer {
     padding-bottom: 1rem;
     border-bottom: 1px solid #333;
 }
+
+/* ── Pagination ─────────────────────────────────────────────────────────── */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 2.5rem 0 1rem;
+}
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.2rem;
+    height: 2.2rem;
+    padding: 0 0.65rem;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #1f1f1f;
+    color: #f5f5f5;
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+    cursor: pointer;
+}
+a.page-btn:hover {
+    background: #2a2a2a;
+    border-color: #555;
+}
+.page-btn.active {
+    background: #e50914;
+    border-color: #e50914;
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
+}
+.page-btn.disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+}
+.page-ellipsis {
+    color: #666;
+    font-size: 0.88rem;
+    padding: 0 0.2rem;
+    line-height: 2.2rem;
+}

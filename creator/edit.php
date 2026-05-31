@@ -68,40 +68,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Handle new poster upload
     $posterImage = $movie['poster_image']; // keep existing by default
-    if (!empty($_FILES['poster_image']['name'])) {
-        $allowed  = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        $fileType = mime_content_type($_FILES['poster_image']['tmp_name']);
-        $fileSize = $_FILES['poster_image']['size'];
-
-        if (!in_array($fileType, $allowed)) {
-            $errors[] = 'Poster must be a JPG, PNG, WebP, or GIF image.';
-        } elseif ($fileSize > 5 * 1024 * 1024) {
-            $errors[] = 'Poster image must be under 5MB.';
+    if (!empty($_FILES['poster_image']['name']) && $_FILES['poster_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['poster_image']['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Poster upload failed (the file may be too large).';
         } else {
-            $uploadDir = '../uploads/posters/';
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-            $ext         = pathinfo($_FILES['poster_image']['name'], PATHINFO_EXTENSION);
-            $filename    = 'poster_' . uniqid() . '.' . $ext;
-            $destination = $uploadDir . $filename;
-            if (move_uploaded_file($_FILES['poster_image']['tmp_name'], $destination)) {
-                // Delete old poster if exists
-                if ($movie['poster_image'] && file_exists('../' . $movie['poster_image'])) {
-                    unlink('../' . $movie['poster_image']);
-                }
-                $posterImage = 'uploads/posters/' . $filename;
+            $allowed   = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            $imageInfo = @getimagesize($_FILES['poster_image']['tmp_name']);
+            $fileType  = $imageInfo['mime'] ?? '';
+            $fileSize  = $_FILES['poster_image']['size'];
+
+            if (!in_array($fileType, $allowed, true)) {
+                $errors[] = 'Poster must be a JPG, PNG, WebP, or GIF image.';
+            } elseif ($fileSize > 5 * 1024 * 1024) {
+                $errors[] = 'Poster image must be under 5MB.';
             } else {
-                $errors[] = 'Failed to upload poster image.';
+                $uploadDir = '../uploads/posters/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                $ext         = pathinfo($_FILES['poster_image']['name'], PATHINFO_EXTENSION);
+                $filename    = 'poster_' . uniqid() . '.' . $ext;
+                $destination = $uploadDir . $filename;
+                if (move_uploaded_file($_FILES['poster_image']['tmp_name'], $destination)) {
+                    // Delete old poster if exists
+                    if ($movie['poster_image'] && file_exists('../' . $movie['poster_image'])) {
+                        unlink('../' . $movie['poster_image']);
+                    }
+                    $posterImage = 'uploads/posters/' . $filename;
+                } else {
+                    $errors[] = 'Failed to upload poster image.';
+                }
             }
         }
     }
 
     // Handle new media file upload
-    if (!empty($_FILES['media_file']['name'])) {
+    if (!empty($_FILES['media_file']['name']) && $_FILES['media_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+      if ($_FILES['media_file']['error'] !== UPLOAD_ERR_OK) {
+        $errors[] = 'Media upload failed (the file may be too large).';
+      } else {
         $allowedMedia = ['video/mp4', 'video/webm', 'audio/mpeg', 'audio/mp4', 'audio/ogg'];
-        $mediaType    = mime_content_type($_FILES['media_file']['tmp_name']);
+        $mediaType    = detect_file_mime($_FILES['media_file']['tmp_name'], $_FILES['media_file']['name']);
         $mediaSize    = $_FILES['media_file']['size'];
 
-        if (!in_array($mediaType, $allowedMedia)) {
+        if (!in_array($mediaType, $allowedMedia, true)) {
             $errors[] = 'Media file must be MP4, WebM, MP3, or OGG.';
         } elseif ($mediaSize > 100 * 1024 * 1024) {
             $errors[] = 'Media file must be under 100MB.';
@@ -142,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'Failed to upload media file.';
             }
         }
+      }
     }
 
     if (empty($errors)) {

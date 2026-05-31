@@ -58,14 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'Poster image must be under 20MB.';
             } else {
                 $uploadDir = '../uploads/posters/';
-                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-                $ext         = pathinfo($_FILES['poster_image']['name'], PATHINFO_EXTENSION);
-                $filename    = 'poster_' . uniqid() . '.' . $ext;
-                $destination = $uploadDir . $filename;
-                if (move_uploaded_file($_FILES['poster_image']['tmp_name'], $destination)) {
-                    $posterImage = 'uploads/posters/' . $filename;
+                if (!is_dir($uploadDir) && !@mkdir($uploadDir, 0775, true)) {
+                    $errors[] = 'Server cannot create the uploads/posters folder. Check directory permissions.';
+                } elseif (!is_writable($uploadDir)) {
+                    $errors[] = 'The uploads/posters folder is not writable by the web server. Run: chmod -R 775 uploads (and chown to the web user).';
                 } else {
-                    $errors[] = 'Failed to upload poster image.';
+                    $ext         = pathinfo($_FILES['poster_image']['name'], PATHINFO_EXTENSION);
+                    $filename    = 'poster_' . uniqid() . '.' . $ext;
+                    $destination = $uploadDir . $filename;
+                    if (move_uploaded_file($_FILES['poster_image']['tmp_name'], $destination)) {
+                        $posterImage = 'uploads/posters/' . $filename;
+                    } else {
+                        $errors[] = 'Failed to move the uploaded poster into uploads/posters.';
+                    }
                 }
             }
         }

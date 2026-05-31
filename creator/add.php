@@ -54,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!in_array($fileType, $allowed, true)) {
                 $errors[] = 'Poster must be a JPG, PNG, WebP, or GIF image.';
-            } elseif ($fileSize > 20 * 1024 * 1024) {
-                $errors[] = 'Poster image must be under 20MB.';
+            } elseif ($fileSize > 5 * 1024 * 1024) {
+                $errors[] = 'Poster image must be under 5MB.';
             } else {
                 $uploadDir = '../uploads/posters/';
                 if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -367,7 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="poster_image">Poster Image</label>
                         <input type="file" id="poster_image" name="poster_image"
                                accept="image/jpeg,image/png,image/webp,image/gif">
-                        <span class="field-hint">JPG, PNG, WebP or GIF — max 20MB</span>
+                        <span class="field-hint">JPG, PNG, WebP or GIF — max 5MB</span>
                         <img id="posterPreview" class="upload-preview" alt="Poster preview">
                     </div>
 

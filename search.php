@@ -518,7 +518,7 @@ function buildPageUrl(int $p): string {
         <?php else: ?>
             <div class="movie-grid search-grid">
                 <?php foreach ($movies as $movie): ?>
-                    <article class="movie-card">
+                    <article class="movie-card" onclick="window.location='movie.php?id=<?= (int)$movie['movie_id'] ?>'">
                         <div class="poster">
                             <?php if (!empty($movie['poster_image'])): ?>
                                 <img src="<?= htmlspecialchars($movie['poster_image']) ?>"

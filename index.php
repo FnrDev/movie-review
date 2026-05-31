@@ -141,7 +141,7 @@ $result = mysqli_stmt_get_result($stmt);
             <?php else: ?>
                 <div class="movie-grid">
                     <?php while ($movie = mysqli_fetch_assoc($result)): ?>
-                        <article class="movie-card">
+                        <article class="movie-card" onclick="window.location='movie.php?id=<?= (int)$movie['movie_id'] ?>'">
                             <div class="poster">
                                 <?php if (!empty($movie['poster_image'])): ?>
                                     <img src="<?= htmlspecialchars($movie['poster_image']) ?>"

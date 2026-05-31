@@ -114,6 +114,7 @@ main {
     display: flex;
     flex-direction: column;
     transition: transform 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
 }
 
 .movie-card:hover {

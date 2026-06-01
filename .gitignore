@@ -1,1 +1,31 @@
 .DS_Store
+
+# Environment files
+.env
+.env.local
+
+# Composer
+/vendor/
+composer.lock
+
+# IDE
+.vscode/*
+!.vscode/sftp.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+/logs/
+
+# Uploads (optional - uncomment if you don't want to track uploads)
+# /uploads/*
+# !/uploads/.gitkeep
+
+# Cache
+/cache/
+/tmp/
+
+# OS
+Thumbs.db

@@ -212,40 +212,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </footer>
 
+    <!-- jQuery Library -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out 2; }
+    </style>
+    
     <script>
-        // JS validation before form submits
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        // jQuery smooth scroll to form on error
+        $(document).ready(function() {
+            <?php if ($error): ?>
+                $('html, body').animate({
+                    scrollTop: $('.auth-card').offset().top - 100
+                }, 500);
+                $('.alert-error').hide().fadeIn(500);
+            <?php endif; ?>
+        });
+
+        // JS validation before form submits with jQuery animations
+        $('#loginForm').on('submit', function(e) {
             let valid = true;
 
-            const email    = document.getElementById('email');
-            const password = document.getElementById('password');
-            const emailErr = document.getElementById('emailErr');
-            const passErr  = document.getElementById('passwordErr');
+            const email    = $('#email');
+            const password = $('#password');
+            const emailErr = $('#emailErr');
+            const passErr  = $('#passwordErr');
 
-            emailErr.textContent = '';
-            passErr.textContent  = '';
-            email.classList.remove('invalid');
-            password.classList.remove('invalid');
+            emailErr.text('');
+            passErr.text('');
+            email.removeClass('invalid shake');
+            password.removeClass('invalid shake');
 
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-            if (!email.value.trim()) {
-                emailErr.textContent = 'Email is required.';
-                email.classList.add('invalid');
+            if (!email.val().trim()) {
+                emailErr.text('Email is required.');
+                email.addClass('invalid shake');
                 valid = false;
-            } else if (!emailRegex.test(email.value.trim())) {
-                emailErr.textContent = 'Enter a valid email address.';
-                email.classList.add('invalid');
-                valid = false;
-            }
-
-            if (!password.value) {
-                passErr.textContent = 'Password is required.';
-                password.classList.add('invalid');
+            } else if (!emailRegex.test(email.val().trim())) {
+                emailErr.text('Enter a valid email address.');
+                email.addClass('invalid shake');
                 valid = false;
             }
 
-            if (!valid) e.preventDefault();
+            if (!password.val()) {
+                passErr.text('Password is required.');
+                password.addClass('invalid shake');
+                valid = false;
+            }
+
+            if (!valid) {
+                e.preventDefault();
+                // Fade in error messages
+                $('.field-error').filter(function() {
+                    return $(this).text().length > 0;
+                }).hide().fadeIn(300);
+            }
         });
     </script>
 </body>

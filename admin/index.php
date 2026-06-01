@@ -298,7 +298,8 @@ if ($action === 'reports') {
         .btn.danger:hover { background: rgba(239,68,68,0.1); }
         .btn.green { background: transparent; color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
         .btn.green:hover { background: rgba(34,197,94,0.1); }
-        .actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+        .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .actions form { margin: 0; }
         /* Alert */
         .alert { padding: 0.7rem 1rem; border-radius: 7px; margin-bottom: 1rem; font-size: 0.88rem; }
         .alert.ok  { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); color: #86efac; }
@@ -332,6 +333,7 @@ if ($action === 'reports') {
             background: #141414; color: #f5f5f5;
             border: 1px solid #333; border-radius: 5px;
             padding: 0.3rem 0.5rem; font: inherit; font-size: 0.78rem;
+            min-width: 90px; margin-right: 0.25rem;
         }
     </style>
 </head>
@@ -563,8 +565,7 @@ if ($action === 'reports') {
                                         <td class="comment-preview"><?= htmlspecialchars($c['comment_text']) ?></td>
                                         <td><?= htmlspecialchars(substr($c['created_at'],0,16)) ?></td>
                                         <td>
-                                            <form method="post" style="display:inline;"
-                                                  onsubmit="return confirm('Remove this comment?')">
+                                            <form method="post" style="display:inline;" class="delete-comment-form" data-confirm="Remove this comment?">
                                                 <input type="hidden" name="comment_id" value="<?= (int)$c['comment_id'] ?>">
                                                 <button type="submit" name="delete_comment" class="btn danger">Remove</button>
                                             </form>
@@ -692,6 +693,70 @@ if ($action === 'reports') {
             <p>&copy; <?= date('Y') ?> Movie Review</p>
         </div>
     </footer>
+    
+    <!-- jQuery Library -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Fade in alerts
+            $('.alert').hide().fadeIn(500);
+            
+            // Fade in stat cards
+            $('.stat-card').hide().each(function(index) {
+                $(this).delay(index * 80).fadeIn(400);
+            });
+            
+            // Fade in table rows
+            $('.data-table tbody tr').hide().each(function(index) {
+                $(this).delay(index * 30).fadeIn(300);
+            });
+            
+            // Smooth confirmation dialogs for delete comment
+            $('.delete-comment-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                const form = $(this);
+                const message = form.data('confirm') || 'Are you sure?';
+                
+                // Create custom confirm dialog with fade
+                const overlay = $('<div>').css({
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.7)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }).hide();
+                
+                const dialog = $('<div>').css({
+                    background: '#1f1f1f', padding: '2rem', borderRadius: '12px',
+                    border: '1px solid #2a2a2a', maxWidth: '400px', textAlign: 'center'
+                }).html(`
+                    <p style="margin-bottom: 1.5rem; font-size: 1.1rem; color: #f5f5f5;">${message}</p>
+                    <button class="btn-confirm" style="background: #e50914; color: #fff; border: none; padding: 0.5rem 1.5rem; border-radius: 6px; margin-right: 0.5rem; cursor: pointer; font-weight: 600;">Confirm</button>
+                    <button class="btn-cancel" style="background: transparent; color: #f5f5f5; border: 1px solid #444; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancel</button>
+                `);
+                
+                overlay.append(dialog);
+                $('body').append(overlay);
+                overlay.fadeIn(200);
+                
+                dialog.find('.btn-confirm').on('click', function() {
+                    overlay.fadeOut(200, function() {
+                        overlay.remove();
+                        // Add hidden input to ensure delete_comment is in POST data
+                        if (!form.find('input[name="delete_comment"]').length) {
+                            form.append('<input type="hidden" name="delete_comment" value="1">');
+                        }
+                        // Unbind this jQuery handler and submit natively
+                        form.off('submit');
+                        form[0].submit();
+                    });
+                });
+                
+                dialog.find('.btn-cancel').on('click', function() {
+                    overlay.fadeOut(200, function() { overlay.remove(); });
+                });
+            });
+        });
+    </script>
 </body>
 </html>
 <?php mysqli_close($dbc); ?>

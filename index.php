@@ -204,6 +204,38 @@ $result = mysqli_stmt_get_result($stmt);
             <p>&copy; <?= date('Y') ?> Movie Review</p>
         </div>
     </footer>
+    
+    <!-- jQuery Library -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Fade in movie cards on page load
+            $('.movie-card').hide().each(function(index) {
+                $(this).delay(index * 50).fadeIn(400);
+            });
+            
+            // Smooth hover effect for movie cards
+            $('.movie-card').hover(
+                function() {
+                    $(this).stop().animate({
+                        transform: 'translateY(-5px)'
+                    }, 200);
+                },
+                function() {
+                    $(this).stop().animate({
+                        transform: 'translateY(0)'
+                    }, 200);
+                }
+            );
+            
+            // Smooth scroll for pagination
+            $('.pagination a').on('click', function(e) {
+                $('html, body').animate({
+                    scrollTop: $('.movies').offset().top - 100
+                }, 500);
+            });
+        });
+    </script>
 </body>
 </html>
 <?php

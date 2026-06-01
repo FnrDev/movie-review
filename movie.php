@@ -549,6 +549,9 @@ if (!empty($movie['trailer_url'])) {
         </div>
     </footer>
 
+    <!-- jQuery Library -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
     <script>
         const MOVIE_ID = <?= $movieId ?>;
 
@@ -607,11 +610,17 @@ if (!empty($movie['trailer_url'])) {
                 post(fd).then(res => {
                     setMsg(ratingMsg, res.message, res.ok);
                     if (res.ok) {
-                        // Update the rating badge in the hero
+                        // Update the rating badge in the hero with jQuery fade animation
                         const badge = document.querySelector('.rating-badge');
-                        if (badge) badge.innerHTML =
-                            '&#9733; ' + res.avg_rating +
-                            ' <small>(' + res.total_ratings + ' ratings)</small>';
+                        if (badge) {
+                            $(badge).fadeOut(200, function() {
+                                badge.innerHTML = '&#9733; ' + res.avg_rating +
+                                    ' <small>(' + res.total_ratings + ' ratings)</small>';
+                                $(badge).fadeIn(300);
+                            });
+                        }
+                        // Animate success message
+                        $(ratingMsg).hide().fadeIn(400);
                     }
                 }).catch(() => setMsg(ratingMsg, 'Network error. Please try again.', false))
                   .finally(() => { btn.disabled = false; btn.textContent = 'Submit Rating'; });
@@ -679,22 +688,32 @@ if (!empty($movie['trailer_url'])) {
                         '</div>' +
                         '<p class="comment-text">' + escHtml(res.text).replace(/\n/g, '<br>') + '</p>';
 
-                    // Remove "no comments" placeholder if present
+                    // Remove "no comments" placeholder if present with fade
                     const placeholder = document.querySelector('.no-comments');
-                    if (placeholder) placeholder.remove();
+                    if (placeholder) {
+                        $(placeholder).fadeOut(300, function() { placeholder.remove(); });
+                    }
 
-                    // Insert before the first existing card (newest first)
+                    // Insert before the first existing card (newest first) with slide animation
                     const list  = document.querySelector('.comments-section');
                     const first = list.querySelector('.comment-card');
+                    $(card).hide();
                     first ? list.insertBefore(card, first) : list.appendChild(card);
+                    $(card).slideDown(400);
 
-                    // Update the section counter
+                    // Update the section counter with fade
                     const title = document.getElementById('commentsTitle');
                     if (title) {
                         const match = title.textContent.match(/\d+/);
                         const count = match ? parseInt(match[0]) + 1 : 1;
-                        title.textContent = 'Comments (' + count + ')';
+                        $(title).fadeOut(200, function() {
+                            title.textContent = 'Comments (' + count + ')';
+                            $(title).fadeIn(200);
+                        });
                     }
+                    
+                    // Animate success message
+                    $(commentMsg).hide().fadeIn(400);
                 }).catch(() => setMsg(commentMsg, 'Network error. Please try again.', false))
                   .finally(() => { btn.disabled = false; btn.textContent = 'Post Comment'; });
             });

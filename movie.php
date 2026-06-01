@@ -5,6 +5,9 @@ require_once 'config.php';
 $dbc     = get_db_connection();
 $movieId = (int) ($_GET['id'] ?? 0);
 
+// Genres for the navigation menu
+$navGenres = fetch_genres($dbc);
+
 if ($movieId === 0) {
     header('Location: index.php');
     exit;
@@ -364,6 +367,16 @@ if (!empty($movie['trailer_url'])) {
             <ul class="nav-links">
                 <li><a href="index.php">Home</a></li>
                 <li><a href="search.php">Search</a></li>
+                <?php if (!empty($navGenres)): ?>
+                <li class="genre-dropdown">
+                    <a href="search.php" class="genre-toggle">Genres</a>
+                    <ul class="genre-menu">
+                        <?php foreach ($navGenres as $gn): ?>
+                            <li><a href="search.php?genre=<?= (int)$gn['genre_id'] ?>"><?= htmlspecialchars($gn['genre_name']) ?></a></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </li>
+                <?php endif; ?>
                 <?php if (isset($_SESSION['user'])): ?>
                     <?php if ($_SESSION['user']['role'] === 'creator'): ?>
                         <li><a href="creator/index.php">My Movies</a></li>

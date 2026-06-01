@@ -13,6 +13,21 @@ function get_db_connection() {
 }
 
 /**
+ * Fetch all genres ordered by name. Used by the genre navigation menu
+ * (header dropdown + home genre bar) and the search genre filter.
+ */
+function fetch_genres($dbc) {
+    $genres = [];
+    $res = mysqli_query($dbc, "SELECT genre_id, genre_name FROM dbProj_genres ORDER BY genre_name");
+    if ($res) {
+        while ($g = mysqli_fetch_assoc($res)) {
+            $genres[] = $g;
+        }
+    }
+    return $genres;
+}
+
+/**
  * Detect a file's MIME type without depending on the fileinfo extension.
  * Falls back to mime_content_type/finfo when available, then to the file
  * extension. Used for upload validation so uploads don't fatal-error on

@@ -3,6 +3,9 @@ session_start();
 require_once 'config.php';
 $dbc = get_db_connection();
 
+// Genres for the navigation menu
+$navGenres = fetch_genres($dbc);
+
 //Pagination
 $perPage     = 8;
 $currentPage = max(1, (int)($_GET['page'] ?? 1));
@@ -102,6 +105,16 @@ $result = mysqli_stmt_get_result($stmt);
             <ul class="nav-links">
                 <li><a href="index.php">Home</a></li>
                 <li><a href="search.php">Search</a></li>
+                <?php if (!empty($navGenres)): ?>
+                <li class="genre-dropdown">
+                    <a href="search.php" class="genre-toggle">Genres</a>
+                    <ul class="genre-menu">
+                        <?php foreach ($navGenres as $gn): ?>
+                            <li><a href="search.php?genre=<?= (int)$gn['genre_id'] ?>"><?= htmlspecialchars($gn['genre_name']) ?></a></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </li>
+                <?php endif; ?>
                 <?php if (isset($_SESSION['user'])): ?>
                     <?php if ($_SESSION['user']['role'] === 'creator'): ?>
                         <li><a href="creator/index.php">My Movies</a></li>
@@ -130,6 +143,15 @@ $result = mysqli_stmt_get_result($stmt);
     </section>
 
     <main class="container">
+        <?php if (!empty($navGenres)): ?>
+            <nav class="genre-bar" aria-label="Browse movies by genre">
+                <a href="search.php" class="genre-pill">All</a>
+                <?php foreach ($navGenres as $gn): ?>
+                    <a href="search.php?genre=<?= (int)$gn['genre_id'] ?>" class="genre-pill"><?= htmlspecialchars($gn['genre_name']) ?></a>
+                <?php endforeach; ?>
+            </nav>
+        <?php endif; ?>
+
         <section class="movies">
             <div class="section-head">
                 <h3>Latest Movies</h3>

@@ -9,6 +9,7 @@ $query      = trim($_GET['q'] ?? '');
 $dateFrom   = trim($_GET['date_from'] ?? '');
 $dateTo     = trim($_GET['date_to'] ?? '');
 $creatorId  = (int) ($_GET['creator'] ?? 0);
+$genreId    = (int) ($_GET['genre'] ?? 0);
 $sortBy     = $_GET['sort'] ?? 'newest';
 $page       = max(1, (int) ($_GET['page'] ?? 1));
 $perPage    = 10;
@@ -16,6 +17,13 @@ $offset     = ($page - 1) * $perPage;
 
 $allowedSorts = ['newest', 'oldest', 'rating', 'views', 'title'];
 if (!in_array($sortBy, $allowedSorts)) $sortBy = 'newest';
+
+// Genres for the navigation menu + genre filter dropdown
+$navGenres = fetch_genres($dbc);
+$genreName = '';
+foreach ($navGenres as $gn) {
+    if ((int)$gn['genre_id'] === $genreId) { $genreName = $gn['genre_name']; break; }
+}
 
 // Fetch creators for dropdown
 $creatorRes  = mysqli_query($dbc, "
@@ -57,6 +65,12 @@ if ($dateTo !== '') {
 if ($creatorId > 0) {
     $conditions[] = "m.creator_id = ?";
     $params[]     = $creatorId;
+    $types       .= 'i';
+}
+
+if ($genreId > 0) {
+    $conditions[] = "m.genre_id = ?";
+    $params[]     = $genreId;
     $types       .= 'i';
 }
 
@@ -388,6 +402,16 @@ function buildPageUrl(int $p): string {
             <ul class="nav-links">
                 <li><a href="index.php">Home</a></li>
                 <li><a href="search.php" style="color:#e50914;">Search</a></li>
+                <?php if (!empty($navGenres)): ?>
+                <li class="genre-dropdown">
+                    <a href="search.php" class="genre-toggle">Genres</a>
+                    <ul class="genre-menu">
+                        <?php foreach ($navGenres as $gn): ?>
+                            <li><a href="search.php?genre=<?= (int)$gn['genre_id'] ?>"><?= htmlspecialchars($gn['genre_name']) ?></a></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </li>
+                <?php endif; ?>
                 <?php if (isset($_SESSION['user'])): ?>
                     <?php if ($_SESSION['user']['role'] === 'creator'): ?>
                         <li><a href="creator/index.php">My Movies</a></li>
@@ -417,6 +441,7 @@ function buildPageUrl(int $p): string {
                     <?php if ($dateFrom): ?><input type="hidden" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>"><?php endif; ?>
                     <?php if ($dateTo):   ?><input type="hidden" name="date_to"   value="<?= htmlspecialchars($dateTo) ?>"><?php endif; ?>
                     <?php if ($creatorId): ?><input type="hidden" name="creator"  value="<?= $creatorId ?>"><?php endif; ?>
+                    <?php if ($genreId):   ?><input type="hidden" name="genre"    value="<?= $genreId ?>"><?php endif; ?>
                     <?php if ($sortBy !== 'newest'): ?><input type="hidden" name="sort" value="<?= htmlspecialchars($sortBy) ?>"><?php endif; ?>
                     <button type="submit" class="btn-search">Search</button>
                 </div>
@@ -437,6 +462,19 @@ function buildPageUrl(int $p): string {
                         <option value="rating"  <?= $sortBy === 'rating'  ? 'selected' : '' ?>>Top rated</option>
                         <option value="views"   <?= $sortBy === 'views'   ? 'selected' : '' ?>>Most viewed</option>
                         <option value="title"   <?= $sortBy === 'title'   ? 'selected' : '' ?>>Title A&ndash;Z</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Genre</label>
+                    <select name="genre">
+                        <option value="">All genres</option>
+                        <?php foreach ($navGenres as $gn): ?>
+                            <option value="<?= (int)$gn['genre_id'] ?>"
+                                <?= $genreId === (int)$gn['genre_id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($gn['genre_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 
@@ -470,11 +508,14 @@ function buildPageUrl(int $p): string {
 
         <!-- Active filter tags -->
         <?php
-        $hasFilters = $query || $dateFrom || $dateTo || $creatorId || $sortBy !== 'newest';
+        $hasFilters = $query || $dateFrom || $dateTo || $creatorId || $genreId || $sortBy !== 'newest';
         if ($hasFilters): ?>
             <div class="active-filters">
                 <?php if ($query): ?>
                     <span class="filter-tag">Search: "<?= htmlspecialchars($query) ?>"</span>
+                <?php endif; ?>
+                <?php if ($genreId && $genreName !== ''): ?>
+                    <span class="filter-tag">Genre: <?= htmlspecialchars($genreName) ?></span>
                 <?php endif; ?>
                 <?php if ($dateFrom): ?>
                     <span class="filter-tag">From: <?= htmlspecialchars($dateFrom) ?></span>
@@ -502,6 +543,8 @@ function buildPageUrl(int $p): string {
             <h3>
                 <?php if ($query): ?>
                     Results for "<?= htmlspecialchars($query) ?>"
+                <?php elseif ($genreId && $genreName !== ''): ?>
+                    <?= htmlspecialchars($genreName) ?> Movies
                 <?php else: ?>
                     All Movies
                 <?php endif; ?>

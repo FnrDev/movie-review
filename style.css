@@ -275,3 +275,74 @@ footer {
     font-weight: 700;
 }
 .pagination span.dots { border-color: transparent; color: #666; }
+
+/* ── Genre navigation menu (header dropdown) ────────────────────────────── */
+.genre-dropdown { position: relative; }
+.genre-dropdown > .genre-toggle { cursor: pointer; }
+.genre-dropdown > .genre-toggle::after {
+    content: "\25BE";
+    font-size: 0.7em;
+    margin-left: 0.3rem;
+    vertical-align: middle;
+}
+.genre-menu {
+    position: absolute;
+    top: 150%;
+    right: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    background: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+    gap: 0.1rem;
+    min-width: 290px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+    z-index: 60;
+}
+.genre-dropdown:hover .genre-menu,
+.genre-dropdown:focus-within .genre-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.genre-menu li { margin: 0; }
+.genre-menu a {
+    display: block;
+    padding: 0.45rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    color: #e5e5e5;
+}
+.genre-menu a:hover { background: #2a2a2a; color: #fff; }
+
+/* ── Home "Browse by genre" bar ─────────────────────────────────────────── */
+.genre-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.75rem 0 0.5rem;
+}
+.genre-bar .genre-pill {
+    background: #1f1f1f;
+    border: 1px solid #2f2f2f;
+    color: #ddd;
+    padding: 0.4rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.genre-bar .genre-pill:hover,
+.genre-bar .genre-pill.active {
+    background: #e50914;
+    border-color: #e50914;
+    color: #fff;
+}

@@ -137,6 +137,7 @@ $msg = $_GET['msg'] ?? '';
         .alert {
             padding: 0.75rem 1rem;
             border-radius: 7px;
+            margin-top: 2rem;
             margin-bottom: 1.25rem;
             font-size: 0.9rem;
         }

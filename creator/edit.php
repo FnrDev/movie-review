@@ -216,6 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #2a2a2a;
             border-radius: 12px;
             padding: 2rem;
+            margin: 0 auto;
             max-width: 780px;
         }
         .form-grid {

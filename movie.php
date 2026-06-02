@@ -33,7 +33,7 @@ $movie = mysqli_fetch_assoc($res);
 mysqli_stmt_close($stmt);
 
 if (!$movie) {
-    header('Location: index.php');
+    header('Location: index.php?notice=unavailable');
     exit;
 }
 

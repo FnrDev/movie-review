@@ -96,6 +96,16 @@ $result = mysqli_stmt_get_result($stmt);
         @media (max-width: 600px) {
             .hero-banner h1 { font-size: 1.9rem; }
         }
+        /* System notice (e.g. content removed by admin) */
+        .system-notice {
+            background: rgba(229,9,20,0.12);
+            border: 1px solid rgba(229,9,20,0.35);
+            color: #fca5a5;
+            padding: 0.8rem 1.1rem;
+            border-radius: 8px;
+            margin-bottom: 1.25rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -143,6 +153,13 @@ $result = mysqli_stmt_get_result($stmt);
     </section>
 
     <main class="container">
+
+        <?php if (($_GET['notice'] ?? '') === 'unavailable'): ?>
+            <div class="system-notice">
+                This content is no longer available. It may have been removed by an administrator.
+            </div>
+        <?php endif; ?>
+
         <?php if (!empty($navGenres)): ?>
             <nav class="genre-bar" aria-label="Browse movies by genre">
                 <a href="search.php" class="genre-pill">All</a>

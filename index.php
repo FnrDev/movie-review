@@ -103,6 +103,7 @@ $result = mysqli_stmt_get_result($stmt);
             color: #fca5a5;
             padding: 0.8rem 1.1rem;
             border-radius: 8px;
+            margin-top: 1.5rem;
             margin-bottom: 1.25rem;
             font-size: 0.9rem;
         }

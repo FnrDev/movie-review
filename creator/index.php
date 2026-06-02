@@ -75,6 +75,7 @@ $msg = $_GET['msg'] ?? '';
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: 2rem;
             margin-bottom: 1.5rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #333;
